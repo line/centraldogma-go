@@ -1,22 +1,24 @@
 language: go
 go:
-  - "1.11.x"
+- 1.11.x
 sudo: false
 env:
   global:
-    - "GO111MODULE=on"
-go_import_path: "go.linecorp.com/centraldogma"
+  - GO111MODULE=on
+go_import_path: go.linecorp.com/centraldogma
 install:
-  - go get -v go.linecorp.com/centraldogma
-  - go get -v go.linecorp.com/centraldogma/internal/app/dogma
+- go get -v go.linecorp.com/centraldogma
+- go get -v go.linecorp.com/centraldogma/internal/app/dogma
 script:
-  - go test -v -race -coverprofile=coverage.1.txt -covermode=atomic go.linecorp.com/centraldogma
-  - go test -v -race -coverprofile=coverage.2.txt -covermode=atomic go.linecorp.com/centraldogma/internal/app/dogma
-  - cat coverage.*.txt > coverage.txt
+- go test -v -race -coverprofile=coverage.1.txt -covermode=atomic go.linecorp.com/centraldogma
+- go test -v -race -coverprofile=coverage.2.txt -covermode=atomic go.linecorp.com/centraldogma/internal/app/dogma
+- cat coverage.*.txt > coverage.txt
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash)
 notifications:
   email: false
+  slack:
+    secure: s4L8p4MqCj5bt1tWWH+YpH5KOTNXkJc2VgCv00WmqR3KvG/U8x7FtW4d8d/zF1mMFWVjsAGCh0h22tx4a+kUp1DtHzo3nE27jj49X8sjzPSfwEE72QYs2IhAjCBf6GUqZbif3uduD8G6Dr5W2fwGhHUWJf85Pcyl6HKKhyU5+DFhned/YtWGHrOe+uyGO2N1wmhnow5SfpOS3JjDVEP2gLnQVnUUXXIsGa+zaKYecgSHfnC5wMCKxv29WnxcGriKWrE1sevxhkvE68DzCBngXjy+rfkQMBu/q7xpb+HhclZufStlVi5eWNJsseKmGSThPblETRDxzWBYh4WDV87nC7Z/5MjL2vy98eMQuUvEyFjx802ov4+WLA4CBMrH/D7TF+me/6QW96CdOhJO71UrfZHmcQwz/1EAjkleb0gnJmr7t7qE20cozXAf+kqtmDrX8wruGBS1+wlEkJNrqZ7zSxe9TEW+RcXPLHxwbXyB28yxuiNHhmddY3pJfGpNfkK0ubapdBD/QanNakHaASy6eAhH8jeEiFU7OX9Zttih6QSL2HZ8AoxA7p5hpw8sq6HE1IK2DUMJWiqtetYkIZZjXIgkiIKVX3VgLSrWf8ozZqtgg5a7Cl0ZRCTTPzsE5z3QeCJ7DYKKVtAjsu2VJEhd+0Dci9RajIGxWDVtle4w3v8=
 cache:
   directories:
-    - "$GOPATH/pkg/mod/cache"
+  - "$GOPATH/pkg/mod/cache"
