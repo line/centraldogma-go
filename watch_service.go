@@ -72,9 +72,12 @@ func (ws *watchService) watchFile(ctx context.Context, projectName, repoName, la
 func (ws *watchService) watchRepo(ctx context.Context,
 	projectName, repoName, lastKnownRevision, pathPattern string, timeout time.Duration) <-chan *WatchResult {
 	watchResult := make(chan *WatchResult)
-	if len(pathPattern) != 0 && !strings.HasPrefix(pathPattern, "/") {
-		// Normalize the pathPattern when it does not start with "/" so that the pathPattern fits into the url.
-		pathPattern = "/**/" + pathPattern
+
+	// Normalize pathPattern
+	if len(pathPattern) == 0 {
+		pathPattern = "/**"
+	} else if !strings.HasPrefix(pathPattern, "/") {
+		pathPattern = "/" + pathPattern
 	}
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, pathPattern)

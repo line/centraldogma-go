@@ -301,3 +301,46 @@ func TestRepoWatcher(t *testing.T) {
 	}
 	fw.Close()
 }
+
+func TestRepoWatcherInvalidPathPattern(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	expectedLastKnownRevision := 1
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		// Let's pretend that the content is modified after 100 millisecond and the revision is increased by 1.
+		time.Sleep(100 * time.Millisecond)
+		expectedLastKnownRevision++
+
+		fmt.Fprint(w, `{"revision":`+strconv.Itoa(expectedLastKnownRevision)+`,
+"author":{"name":"minux", "email":"minux@m.x"},
+"commitMessage":{"summary":"Add a.json"}
+}`)
+	}
+
+	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/**", handler)
+
+	patterns := []string{"", "**"}
+	want := 2
+	for _, pattern := range patterns {
+		fw, _ := c.RepoWatcher("foo", "bar", pattern)
+
+		myCh := make(chan interface{})
+		listener := func(revision int, value interface{}) { myCh <- value }
+		fw.Watch(listener)
+
+		for i := 0; i < 10; i++ {
+			select {
+			case revision := <-myCh:
+				if revision != want {
+					t.Errorf("watch returned: %v, want %v", revision, want)
+				}
+			case <-time.After(3 * time.Second):
+				t.Error("failed to watch")
+			}
+			want++
+		}
+		fw.Close()
+		close(myCh)
+	}
+}
