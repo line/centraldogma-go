@@ -390,7 +390,7 @@ func (c *Client) Push(ctx context.Context, projectName, repoName, baseRevision s
 // WatchFile awaits and returns the query result of the specified file since the specified last known revision.
 func (c *Client) WatchFile(ctx context.Context, projectName, repoName, lastKnownRevision string,
 	query *Query, timeout time.Duration) <-chan *WatchResult {
-	watchResult := make(chan *WatchResult)
+	watchResult := make(chan *WatchResult, 1)
 	go func() {
 		watchResult <- c.watch.watchFile(ctx, projectName, repoName, lastKnownRevision, query, timeout)
 	}()
@@ -400,7 +400,7 @@ func (c *Client) WatchFile(ctx context.Context, projectName, repoName, lastKnown
 // WatchRepository awaits and returns the latest known revision since the specified revision.
 func (c *Client) WatchRepository(ctx context.Context,
 	projectName, repoName, lastKnownRevision, pathPattern string, timeout time.Duration) <-chan *WatchResult {
-	watchResult := make(chan *WatchResult)
+	watchResult := make(chan *WatchResult, 1)
 	go func() {
 		watchResult <- c.watch.watchRepo(ctx, projectName, repoName, lastKnownRevision,
 			pathPattern, timeout)
