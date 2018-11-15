@@ -51,6 +51,11 @@ func (ws *watchService) watchFile(ctx context.Context, projectName, repoName, la
 		return watchResult
 	}
 
+	// Normalize query path when it does not start with "/".
+	if len(query.Path) != 0 && !strings.HasPrefix(query.Path, "/") {
+		query.Path = "/" + query.Path
+	}
+
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, query.Path)
 	v := &url.Values{}
 	if query != nil && query.Type == JSONPath {
