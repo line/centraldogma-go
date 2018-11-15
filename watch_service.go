@@ -44,45 +44,38 @@ type commitWithEntry struct {
 }
 
 func (ws *watchService) watchFile(ctx context.Context, projectName, repoName, lastKnownRevision string,
-	query *Query, timeout time.Duration) <-chan *WatchResult {
-	watchResult := make(chan *WatchResult)
+	query *Query, timeout time.Duration) *WatchResult {
 	if query == nil {
-		watchResult <- &WatchResult{Err: errors.New("query should not be nil")}
-		return watchResult
+		return &WatchResult{Err: errors.New("query should not be nil")}
 	}
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, query.Path)
 	v := &url.Values{}
 	if query != nil && query.Type == JSONPath {
 		if err := setJSONPaths(v, query.Path, query.Expressions); err != nil {
-			watchResult <- &WatchResult{Err: err}
-			return watchResult
+			return &WatchResult{Err: err}
 		}
 	}
 	u += encodeValues(v)
-	ws.watchRequest(ctx, watchResult, u, lastKnownRevision, timeout)
-	return watchResult
+	return ws.watchRequest(ctx, u, lastKnownRevision, timeout)
 }
 
-func (ws *watchService) watchRepo(ctx context.Context,
-	projectName, repoName, lastKnownRevision, pathPattern string, timeout time.Duration) <-chan *WatchResult {
-	watchResult := make(chan *WatchResult)
+func (ws *watchService) watchRepo(ctx context.Context, projectName, repoName,
+	lastKnownRevision, pathPattern string, timeout time.Duration) *WatchResult {
 	if len(pathPattern) != 0 && !strings.HasPrefix(pathPattern, "/") {
 		// Normalize the pathPattern when it does not start with "/" so that the pathPattern fits into the url.
 		pathPattern = "/**/" + pathPattern
 	}
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, pathPattern)
-	ws.watchRequest(ctx, watchResult, u, lastKnownRevision, timeout)
-	return watchResult
+	return ws.watchRequest(ctx, u, lastKnownRevision, timeout)
 }
 
-func (ws *watchService) watchRequest(ctx context.Context, watchResult chan<- *WatchResult,
-	u, lastKnownRevision string, timeout time.Duration) {
+func (ws *watchService) watchRequest(
+	ctx context.Context, u, lastKnownRevision string, timeout time.Duration) *WatchResult {
 	req, err := ws.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		watchResult <- &WatchResult{Err: err}
-		return
+		return &WatchResult{Err: err}
 	}
 	if len(lastKnownRevision) != 0 {
 		req.Header.Set("if-none-match", lastKnownRevision)
@@ -93,16 +86,13 @@ func (ws *watchService) watchRequest(ctx context.Context, watchResult chan<- *Wa
 		req.Header.Set("prefer", fmt.Sprintf("wait=%v", timeout.Seconds()))
 	}
 
-	go func() {
-		commitWithEntry := new(commitWithEntry)
-		res, err := ws.client.do(ctx, req, commitWithEntry)
-		if err != nil {
-			watchResult <- &WatchResult{Res: res, Err: err}
-		} else {
-			watchResult <- &WatchResult{Commit: commitWithEntry.Commit, Entry: commitWithEntry.Entry,
-				Res: res, Err: nil}
-		}
-	}()
+	commitWithEntry := new(commitWithEntry)
+	res, err := ws.client.do(ctx, req, commitWithEntry)
+	if err != nil {
+		return &WatchResult{Res: res, Err: err}
+	} else {
+		return &WatchResult{Commit: commitWithEntry.Commit, Entry: commitWithEntry.Entry, Res: res, Err: nil}
+	}
 }
 
 const watchTimeout = 1 * time.Minute
@@ -125,7 +115,7 @@ type Watcher struct {
 	updateListeners     []func(revision int, value interface{})
 	listenersMutex      *sync.Mutex
 
-	doWatchFunc          func(lastKnownRevision int) <-chan *WatchResult
+	doWatchFunc          func(lastKnownRevision int) *WatchResult
 	convertingResultFunc func(result *WatchResult) *Latest
 
 	projectName string
@@ -240,7 +230,7 @@ func (ws *watchService) fileWatcher(projectName, repoName string, query *Query) 
 	}
 
 	w := newWatcher(projectName, repoName, query.Path)
-	w.doWatchFunc = func(lastKnownRevision int) <-chan *WatchResult {
+	w.doWatchFunc = func(lastKnownRevision int) *WatchResult {
 		return ws.watchFile(w.watchCTX, projectName, repoName, strconv.Itoa(lastKnownRevision),
 			query, watchTimeout)
 	}
@@ -253,7 +243,7 @@ func (ws *watchService) fileWatcher(projectName, repoName string, query *Query) 
 
 func (ws *watchService) repoWatcher(projectName, repoName, pathPattern string) (*Watcher, error) {
 	w := newWatcher(projectName, repoName, pathPattern)
-	w.doWatchFunc = func(lastKnownRevision int) <-chan *WatchResult {
+	w.doWatchFunc = func(lastKnownRevision int) *WatchResult {
 		return ws.watchRepo(w.watchCTX, projectName, repoName, strconv.Itoa(lastKnownRevision),
 			pathPattern, watchTimeout)
 	}
@@ -266,7 +256,9 @@ func (ws *watchService) repoWatcher(projectName, repoName, pathPattern string) (
 
 func (w *Watcher) start() {
 	if atomic.CompareAndSwapInt32(&w.state, initial, started) {
-		w.scheduleWatch(0)
+		go func() {
+			w.scheduleWatch(0)
+		}()
 	}
 }
 
@@ -287,13 +279,11 @@ func (w *Watcher) scheduleWatch(numAttemptsSoFar int) {
 		delay = nextDelay(numAttemptsSoFar)
 	}
 
-	go func() {
-		select {
-		case <-w.watchCTX.Done():
-		case <-time.NewTimer(delay).C:
-			w.doWatch(numAttemptsSoFar)
-		}
-	}()
+	select {
+	case <-w.watchCTX.Done():
+	case <-time.NewTimer(delay).C:
+		w.doWatch(numAttemptsSoFar)
+	}
 }
 
 func (w *Watcher) isStopped() bool {
@@ -314,31 +304,28 @@ func (w *Watcher) doWatch(numAttemptsSoFar int) {
 		lastKnownRevision = curLatest.Revision
 	}
 
-	select {
-	case <-w.watchCTX.Done():
-	case watchResult := <-w.doWatchFunc(lastKnownRevision):
-		if watchResult.Err != nil {
-			if watchResult.Err == context.Canceled {
-				// Cancelled by close()
-				return
-			}
-
-			log.Debug(watchResult.Err)
-			w.scheduleWatch(numAttemptsSoFar + 1)
+	watchResult := w.doWatchFunc(lastKnownRevision)
+	if watchResult.Err != nil {
+		if watchResult.Err == context.Canceled {
+			// Cancelled by close()
 			return
 		}
 
-		newLatest := w.convertingResultFunc(watchResult)
-		if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
-			// The initial latest is set for the first time. So write the value to initialValueCh as well.
-			w.initialValueCh <- newLatest
-		}
-		w.latest.Store(*newLatest)
-		log.Debugf("Watcher noticed updated file: %s/%s%s, rev=%v",
-			w.projectName, w.repoName, w.pathPattern, newLatest.Revision)
-		w.notifyListeners()
-		w.scheduleWatch(0)
+		log.Debug(watchResult.Err)
+		w.scheduleWatch(numAttemptsSoFar + 1)
+		return
 	}
+
+	newLatest := w.convertingResultFunc(watchResult)
+	if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
+		// The initial latest is set for the first time. So write the value to initialValueCh as well.
+		w.initialValueCh <- newLatest
+	}
+	w.latest.Store(*newLatest)
+	log.Debugf("Watcher noticed updated file: %s/%s%s, rev=%v",
+		w.projectName, w.repoName, w.pathPattern, newLatest.Revision)
+	w.notifyListeners()
+	w.scheduleWatch(0)
 }
 
 func (w *Watcher) notifyListeners() {
