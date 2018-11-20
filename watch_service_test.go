@@ -320,7 +320,7 @@ func TestRepoWatcherInvalidPathPattern(t *testing.T) {
 
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/", handler)
 
-	patterns := []string{"", "**", "a.json"}
+	patterns := []string{"", "**", "**/a.json", "a.json"}
 	want := 2
 	for _, pattern := range patterns {
 		fw, _ := c.RepoWatcher("foo", "bar", pattern)
