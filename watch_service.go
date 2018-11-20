@@ -74,7 +74,7 @@ func (ws *watchService) watchRepo(ctx context.Context,
 	watchResult := make(chan *WatchResult)
 
 	// Normalize pathPattern
-	if len(pathPattern) == 0 {
+	if len(pathPattern) == 0 || pathPattern == "**" {
 		pathPattern = "/**"
 	} else if !strings.HasPrefix(pathPattern, "/") {
 		pathPattern = "/**/" + pathPattern
