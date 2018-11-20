@@ -77,7 +77,7 @@ func (ws *watchService) watchRepo(ctx context.Context,
 	if len(pathPattern) == 0 {
 		pathPattern = "/**"
 	} else if !strings.HasPrefix(pathPattern, "/") {
-		pathPattern = "/" + pathPattern
+		pathPattern = "/**/" + pathPattern
 	}
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, pathPattern)
