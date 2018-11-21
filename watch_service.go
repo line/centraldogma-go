@@ -264,13 +264,13 @@ func (w *Watcher) Watch(listener WatchListener) error {
 		return ErrWatcherIsClosed
 	}
 
-	w.listenersMutex.Lock()
+	// start notifier which notify on update
 	ch := make(chan *Latest, 32)
+	go w.notifier(listener, ch)
+
+	w.listenersMutex.Lock()
 	w.updateListenerChans = append(w.updateListenerChans, ch)
 	w.listenersMutex.Unlock()
-
-	// start notifier which notify on update
-	go w.notifier(listener, ch)
 
 	if latest := w.Latest(); latest.Err == nil {
 		select {
@@ -406,7 +406,10 @@ func (w *Watcher) delay() {
 	}
 
 	if delay > 0 {
-		time.Sleep(delay)
+		select {
+		case <-w.watchCTX.Done():
+		case <-time.After(delay):
+		}
 	}
 }
 
