@@ -217,12 +217,20 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		// drain upto 512 bytes and close the body to reuse connection
+		// see also:
+		// - https://github.com/google/go-github/pull/317
+		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
+		io.CopyN(ioutil.Discard, res.Body, 512)
+
+		res.Body.Close()
+	}()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		errorMessage := &errorMessage{}
 
-		err = json.NewDecoder(res.Body).Decode(errorMessage) // no need to drain up
+		err = json.NewDecoder(res.Body).Decode(errorMessage)
 		if err != nil {
 			err = fmt.Errorf("status: %v", res.StatusCode)
 		} else {
@@ -233,18 +241,11 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 	}
 
 	if resContent != nil {
-		err = json.NewDecoder(res.Body).Decode(resContent) // no need to drain up
-		if err == io.EOF {                                 // empty response body
+		err = json.NewDecoder(res.Body).Decode(resContent)
+		if err == io.EOF { // empty response body
 			err = nil
 		}
-	} else {
-		// drain upto 512 bytes and close the body to reuse connection
-		// see also:
-		// - https://github.com/google/go-github/pull/317
-		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.CopyN(ioutil.Discard, res.Body, 512)
 	}
-
 	return res, err
 }
 
