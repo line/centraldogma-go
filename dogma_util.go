@@ -28,6 +28,10 @@ const (
 	maxInt63       = int64(^uint64(0) >> 1)
 )
 
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
+
 func nextDelay(numAttemptsSoFar int) time.Duration {
 	var nextDelay time.Duration
 	if numAttemptsSoFar == 1 {
@@ -46,20 +50,17 @@ func nextDelay(numAttemptsSoFar int) time.Duration {
 	random := random(bound)
 	result := saturatedAdd(minJitter, random)
 	if result < 0 {
-		return 0
-	} else {
-		return time.Duration(result)
+		result = 0
 	}
+	return time.Duration(result)
 }
 
 func saturatedMultiply(left time.Duration, right float64) time.Duration {
 	result := float64(left) * right
-
 	if result > float64(maxInt63) {
 		return time.Duration(maxInt63)
-	} else {
-		return time.Duration(result)
 	}
+	return time.Duration(result)
 }
 
 func random(bound int64) int64 {
