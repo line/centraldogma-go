@@ -218,7 +218,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 		return nil, err
 	}
 	defer func() {
-		// drain upto 512 bytes and close the body to reuse connection
+		// drain up 512 bytes and close the body to reuse connection
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
