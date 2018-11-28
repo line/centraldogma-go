@@ -139,7 +139,7 @@ const (
 	stopped
 )
 
-// WatchListener listen to watcher
+// WatchListener listens to watcher
 type WatchListener func(revision int, value interface{})
 
 // Watcher watches the changes of a repository or a file.
