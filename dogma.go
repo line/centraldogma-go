@@ -40,6 +40,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -47,7 +48,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	"io/ioutil"
 )
 
 var log = logrus.New()
@@ -215,29 +215,28 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 
 	res, err := c.client.Do(req)
 	if err != nil {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		// drain up 512 bytes and close the body to reuse connection
+		// see also:
+		// - https://github.com/google/go-github/pull/317
+		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
+		io.CopyN(ioutil.Discard, res.Body, 512)
+
+		res.Body.Close()
+	}()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		errorMessage := &errorMessage{}
-		data, err := ioutil.ReadAll(res.Body)
-		if err == nil && data != nil {
-			json.Unmarshal(data, errorMessage)
-			if len(errorMessage.Message) != 0 {
-				err = fmt.Errorf("%s (status: %v)", errorMessage.Message, res.StatusCode)
-			} else {
-				err = fmt.Errorf("status: %v", res.StatusCode)
-			}
-		} else {
+
+		err = json.NewDecoder(res.Body).Decode(errorMessage)
+		if err != nil {
 			err = fmt.Errorf("status: %v", res.StatusCode)
+		} else {
+			err = fmt.Errorf("%s (status: %v)", errorMessage.Message, res.StatusCode)
 		}
+
 		return res, err
 	}
 
@@ -247,7 +246,6 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 			err = nil
 		}
 	}
-
 	return res, err
 }
 

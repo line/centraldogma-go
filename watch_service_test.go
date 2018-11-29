@@ -125,8 +125,8 @@ func TestWatcher(t *testing.T) {
 	query := &Query{Path: "/a.json", Type: Identity}
 	fw, _ := c.FileWatcher("foo", "bar", query)
 
-	myCh1 := make(chan interface{})
-	myCh2 := make(chan interface{})
+	myCh1 := make(chan interface{}, 128)
+	myCh2 := make(chan interface{}, 128)
 	listener1 := func(revision int, value interface{}) { myCh1 <- value }
 	listener2 := func(revision int, value interface{}) { myCh2 <- value }
 
@@ -181,7 +181,7 @@ func TestWatcher_convertingValueFunc(t *testing.T) {
 	query := &Query{Path: "/a.json", Type: Identity}
 	fw, _ := c.FileWatcher("foo", "bar", query)
 
-	myCh := make(chan interface{})
+	myCh := make(chan interface{}, 128)
 	listener := func(revision int, value interface{}) { myCh <- value }
 	fw.Watch(listener)
 
@@ -218,14 +218,14 @@ func TestWatcher_closed_AwaitInitialValue(t *testing.T) {
 		t.Errorf("latest: %+v, want %+v", latest.Err, want)
 	}
 
-	done := make(chan bool)
+	done := make(chan struct{})
 	go func() {
 		latest := fw.AwaitInitialValue()
 		want := "watcher is closed"
 		if latest.Err.Error() != want {
 			t.Errorf("latest from AwaitInitialValue: %+v, want %+v", latest.Err, want)
 		}
-		done <- true
+		done <- struct{}{}
 	}()
 	fw.Close()
 	<-done
@@ -243,7 +243,7 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 	query := &Query{Path: "/a.json", Type: Identity}
 	fw, _ := c.watch.fileWatcher("foo", "bar", query)
 
-	done := make(chan bool)
+	done := make(chan struct{})
 	go func() {
 		latest := fw.AwaitInitialValue()
 		want := 3
@@ -256,7 +256,7 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 			t.Errorf("latest: %+v, want %+v", latest2, latest)
 		}
 
-		done <- true
+		done <- struct{}{}
 	}()
 	fw.start()
 	<-done
@@ -283,7 +283,7 @@ func TestRepoWatcher(t *testing.T) {
 
 	fw, _ := c.RepoWatcher("foo", "bar", "/**")
 
-	myCh := make(chan interface{})
+	myCh := make(chan interface{}, 128)
 	listener := func(revision int, value interface{}) { myCh <- value }
 	fw.Watch(listener)
 
@@ -325,7 +325,7 @@ func TestRepoWatcherInvalidPathPattern(t *testing.T) {
 	for _, pattern := range patterns {
 		fw, _ := c.RepoWatcher("foo", "bar", pattern)
 
-		myCh := make(chan interface{})
+		myCh := make(chan interface{}, 128)
 		listener := func(revision int, value interface{}) { myCh <- value }
 		fw.Watch(listener)
 
