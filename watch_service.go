@@ -49,7 +49,7 @@ func (ws *watchService) watchFile(ctx context.Context, projectName, repoName, la
 
 	// validate query
 	if query == nil {
-		watchResult <- &WatchResult{Err: ErrQueryShouldSet}
+		watchResult <- &WatchResult{Err: ErrQueryMustBeSet}
 		return watchResult
 	}
 
@@ -109,7 +109,7 @@ func (ws *watchService) watchRequest(ctx context.Context, watchResult chan<- *Wa
 		req.Header.Set("prefer", fmt.Sprintf("wait=%v", timeout.Seconds()))
 	}
 
-	// TODO: worker pool for this task
+	// TODO(linxGnu): worker pool for this task
 	go func() {
 		reqCtx, cancel := context.WithTimeout(ctx, timeout+time.Second) // wait more than server
 
@@ -117,7 +117,7 @@ func (ws *watchService) watchRequest(ctx context.Context, watchResult chan<- *Wa
 		res, err := ws.client.do(reqCtx, req, commitWithEntry)
 		if err != nil {
 			if err == context.DeadlineExceeded {
-				watchResult <- &WatchResult{Res: res, Err: fmt.Errorf("watch request timeout: %.3f", timeout.Seconds())}
+				watchResult <- &WatchResult{Res: res, Err: fmt.Errorf("watch request timeout: %.3f second(s)", timeout.Seconds())}
 			} else {
 				watchResult <- &WatchResult{Res: res, Err: err}
 			}
@@ -139,7 +139,7 @@ const (
 	stopped
 )
 
-// WatchListener listens to watcher
+// WatchListener listens to Watcher.
 type WatchListener func(revision int, value interface{})
 
 // Watcher watches the changes of a repository or a file.
@@ -245,7 +245,7 @@ func (w *Watcher) LatestValueOr(defaultValue interface{}) interface{} {
 // Close stops watching the file specified in the Query or the pathPattern in the repository.
 func (w *Watcher) Close() {
 	atomic.StoreInt32(&w.state, stopped)
-	latest := &Latest{Err: ErrWatcherIsClosed}
+	latest := &Latest{Err: ErrWatcherClosed}
 	if atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
 		// The initial latest was not set before. So write the value to initialValueCh as well.
 		w.initialValueCh <- latest
@@ -261,7 +261,7 @@ func (w *Watcher) Watch(listener WatchListener) error {
 
 	// check watcher is stopped
 	if w.isStopped() {
-		return ErrWatcherIsClosed
+		return ErrWatcherClosed
 	}
 
 	// start notifier which notify on update
@@ -286,7 +286,7 @@ func (w *Watcher) Watch(listener WatchListener) error {
 
 func (ws *watchService) fileWatcher(projectName, repoName string, query *Query) (*Watcher, error) {
 	if query == nil {
-		return nil, ErrQueryShouldSet
+		return nil, ErrQueryMustBeSet
 	}
 
 	w := newWatcher(projectName, repoName, query.Path)
