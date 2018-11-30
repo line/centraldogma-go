@@ -55,9 +55,13 @@ func (gf *getFileCommand) execute(c *cli.Context) error {
 		}
 		fd.Write(b)
 	} else if entry.Type == centraldogma.Text {
-		_, err = fd.Write(entry.Content)
-		if err != nil {
-			return err
+		if str, ok := entry.Content.(string); ok {
+			_, err = fd.WriteString(str)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("failed to save the content: %v", entry.Content)
 		}
 	}
 
@@ -87,7 +91,11 @@ func (cf *catFileCommand) execute(c *cli.Context) error {
 		}
 		fmt.Printf("%s\n", string(b))
 	} else if entry.Type == centraldogma.Text { //
-		fmt.Printf("%s\n", string(entry.Content))
+		if str, ok := entry.Content.(string); ok {
+			fmt.Printf("%s\n", str)
+		} else {
+			return fmt.Errorf("failed to print the content: %v", entry.Content)
+		}
 	}
 
 	return nil
