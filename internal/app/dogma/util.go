@@ -235,13 +235,9 @@ func putIntoTempFile(entry *centraldogma.Entry) (string, error) {
 		}
 		return tempFilePath, nil
 	} else if entry.Type == centraldogma.Text {
-		if str, ok := entry.Content.(string); ok {
-			_, err = fd.WriteString(str)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			return "", fmt.Errorf("failed to save the content: %v", entry.Content)
+		_, err = fd.Write(entry.Content)
+		if err != nil {
+			return "", err
 		}
 	}
 	return tempFilePath, nil
@@ -279,4 +275,13 @@ func newUpsertChangeFromFile(fileName, repositoryPath string) (*centraldogma.Cha
 
 func marshalIndent(data interface{}) ([]byte, error) {
 	return json.MarshalIndent(data, "", "  ")
+}
+
+func indent(data []byte) ([]byte, error) {
+	b := new(bytes.Buffer)
+	err := json.Indent(b, data, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }

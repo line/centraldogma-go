@@ -11,3 +11,7 @@ var (
 
 	ErrWatcherClosed = fmt.Errorf("watcher is closed")
 )
+
+const (
+	DefaultChannelBuffer = 128
+)

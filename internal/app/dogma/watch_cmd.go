@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli"
+	"go.linecorp.com/centraldogma"
 )
 
 type watchCommand struct {
@@ -50,25 +51,22 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 	}
 
 	cleanupDone := make(chan bool)
-	listener := func(revision int, value interface{}) {
+	listener := func(value centraldogma.WatchResult) {
+		revision, v := value.Commit.Revision, value.Entry.Content
+
 		if revision > normalizedRevision {
 			fmt.Printf("Watcher noticed updated file: %s/%s%s, rev=%v\n",
 				repo.projName, repo.repoName, repo.path, revision)
 			content := ""
 			if strings.HasSuffix(strings.ToLower(repo.path), ".json") {
-				b, err := marshalIndent(value)
+				b, err := indent(v)
 				if err != nil {
 					fmt.Printf("Failed to print the content: %v", value)
 					return
 				}
 				content = string(b)
 			} else {
-				if str, ok := value.(string); ok {
-					content = str
-				} else {
-					fmt.Printf("Failed to print the content: %v", value)
-					return
-				}
+				content = string(v)
 			}
 			fmt.Printf("Content:\n%s\n", content)
 
