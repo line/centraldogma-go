@@ -81,7 +81,7 @@ func (c *Entry) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// EntryContent represents content of an entry
+// EntryContent represents the content of an entry
 type EntryContent []byte
 
 func (e *EntryContent) UnmarshalJSON(b []byte) error {

@@ -38,7 +38,7 @@ func TestWatchFile(t *testing.T) {
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/a.json",
 		func(w http.ResponseWriter, r *http.Request) {
 			testMethod(t, r, http.MethodGet)
-			testHeader(t, r, "if-none-match", "-1")
+			testHeader(t, r, "if-none-match", "1")
 			testHeader(t, r, "prefer", "wait=1")
 
 			// Let's pretend that the content is modified after 100 Millisecond.
@@ -73,7 +73,7 @@ func TestWatchFileInvalidPath(t *testing.T) {
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/a.json",
 		func(w http.ResponseWriter, r *http.Request) {
 			testMethod(t, r, http.MethodGet)
-			testHeader(t, r, "if-none-match", "-1")
+			testHeader(t, r, "if-none-match", "1")
 			testHeader(t, r, "prefer", "wait=1")
 
 			// Let's pretend that the content is modified after 100 Millisecond.
@@ -108,11 +108,7 @@ func TestWatcher(t *testing.T) {
 	expectedLastKnownRevision := 1
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, http.MethodGet)
-		if expectedLastKnownRevision == 1 { // first revision
-			testHeader(t, r, "if-none-match", "-1")
-		} else {
-			testHeader(t, r, "if-none-match", strconv.Itoa(expectedLastKnownRevision))
-		}
+		testHeader(t, r, "if-none-match", strconv.Itoa(expectedLastKnownRevision))
 		testHeader(t, r, "prefer", "wait=60") // watchTimeout is 60 seconds
 
 		// Let's pretend that the content is modified after 100 millisecond and the revision is increased by 1.

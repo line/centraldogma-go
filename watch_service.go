@@ -94,7 +94,8 @@ func (ws *watchService) watchRepo(
 func (ws *watchService) watchRequest(
 	ctx context.Context,
 	u, lastKnownRevision string,
-	timeout time.Duration) *WatchResult {
+	timeout time.Duration,
+) *WatchResult {
 
 	// initialize request
 	req, err := ws.client.newRequest(http.MethodGet, u, nil)
@@ -258,11 +259,18 @@ func (w *Watcher) Watch(listener WatchListener) error {
 	return nil
 }
 
-func (ws *watchService) fileWatcher(ctx context.Context, projectName, repoName string, query *Query) (*Watcher, error) {
+func (ws *watchService) fileWatcher(
+	ctx context.Context,
+	projectName, repoName string, query *Query,
+) (*Watcher, error) {
 	return ws.fileWatcherWithTimeout(ctx, projectName, repoName, query, defaultWatchTimeout)
 }
 
-func (ws *watchService) fileWatcherWithTimeout(ctx context.Context, projectName, repoName string, query *Query, timeout time.Duration) (*Watcher, error) {
+func (ws *watchService) fileWatcherWithTimeout(
+	ctx context.Context,
+	projectName, repoName string, query *Query,
+	timeout time.Duration,
+) (*Watcher, error) {
 	if query == nil {
 		return nil, ErrQueryMustBeSet
 	}
@@ -275,11 +283,18 @@ func (ws *watchService) fileWatcherWithTimeout(ctx context.Context, projectName,
 	return w, nil
 }
 
-func (ws *watchService) repoWatcher(ctx context.Context, projectName, repoName, pathPattern string) (*Watcher, error) {
+func (ws *watchService) repoWatcher(
+	ctx context.Context,
+	projectName, repoName, pathPattern string,
+) (*Watcher, error) {
 	return ws.repoWatcherWithTimeout(ctx, projectName, repoName, pathPattern, defaultWatchTimeout)
 }
 
-func (ws *watchService) repoWatcherWithTimeout(ctx context.Context, projectName, repoName, pathPattern string, timeout time.Duration) (*Watcher, error) {
+func (ws *watchService) repoWatcherWithTimeout(
+	ctx context.Context,
+	projectName, repoName, pathPattern string,
+	timeout time.Duration,
+) (*Watcher, error) {
 	w := newWatcher(ctx, projectName, repoName, pathPattern)
 	w.doWatchFunc = func(ctx context.Context, lastKnownRevision int) *WatchResult {
 		return ws.watchRepo(ctx, projectName, repoName, strconv.Itoa(lastKnownRevision),
@@ -323,7 +338,7 @@ func (w *Watcher) doWatch() {
 	var lastKnownRevision int
 	curLatest := w.getLatest()
 	if curLatest == nil || curLatest.Commit.Revision == 0 {
-		lastKnownRevision = -1 // Init revision
+		lastKnownRevision = 1 // Init revision
 	} else {
 		lastKnownRevision = curLatest.Commit.Revision
 	}
