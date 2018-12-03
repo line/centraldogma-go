@@ -23,10 +23,10 @@ type projectService service
 
 // Project represents a project in the Central Dogma server.
 type Project struct {
-	Name      string  `json:"name"`
-	Creator   *Author `json:"creator,omitempty"`
-	URL       string  `json:"url,omitempty"`
-	CreatedAt string  `json:"createdAt,omitempty"`
+	Name      string `json:"name"`
+	Creator   Author `json:"creator,omitempty"`
+	URL       string `json:"url,omitempty"`
+	CreatedAt string `json:"createdAt,omitempty"`
 }
 
 type Author struct {

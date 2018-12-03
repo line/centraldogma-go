@@ -68,7 +68,7 @@ func TestGetFile(t *testing.T) {
 
 	query := &Query{Path: "/b.txt", Type: Identity}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/b.txt", Type: Text, Content: "hello world~!"}
+	want := &Entry{Path: "/b.txt", Type: Text, Content: EntryContent("hello world~!")}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -86,7 +86,7 @@ func TestGetFile_JSON(t *testing.T) {
 
 	query := &Query{Path: "/a.json", Type: Identity}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -105,7 +105,7 @@ func TestGetFile_WithJSONPath(t *testing.T) {
 
 	query := &Query{Path: "/a.json", Type: JSONPath, Expressions: []string{"$.a"}}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: "b"}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent("b")}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -120,12 +120,12 @@ func TestGetFile_WithJSONPathAndRevision(t *testing.T) {
 			testMethod(t, r, http.MethodGet)
 			testURLQuery(t, r, "jsonpath", "$.a")
 			testURLQuery(t, r, "revision", "-1")
-			fmt.Fprint(w, `{"path":"/a.json", "type":"JSON", "content":"b"}`)
+			fmt.Fprint(w, `{"path":"/a.json", "type":"JSON", "content":    "b"}`)
 		})
 
 	query := &Query{Path: "/a.json", Type: JSONPath, Expressions: []string{"$.a"}}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "-1", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: "b"}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`b`)}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -142,8 +142,10 @@ func TestGetFiles(t *testing.T) {
 	})
 
 	entries, _, _ := c.GetFiles(context.Background(), "foo", "bar", "", "/**")
-	want := []*Entry{{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}},
-		{Path: "/b.txt", Type: Text, Content: "hello world~!"}}
+	want := []*Entry{
+		{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)},
+		{Path: "/b.txt", Type: Text, Content: EntryContent(`hello world~!`)},
+	}
 	if !reflect.DeepEqual(entries, want) {
 		t.Errorf("GetFiles returned %+v, want %+v", entries, want)
 	}
@@ -166,10 +168,10 @@ func TestGetHistory(t *testing.T) {
 
 	history, _, _ := c.GetHistory(context.Background(), "foo", "bar", "-2", "-1", "/**", 2)
 	want := []*Commit{
-		{Revision: 1, Author: &Author{Name: "minux", Email: "minux@m.x"},
-			CommitMessage: &CommitMessage{Summary: "Add a.json"}},
-		{Revision: 2, Author: &Author{Name: "minux", Email: "minux@m.x"},
-			CommitMessage: &CommitMessage{Summary: "Edit a.json"}}}
+		{Revision: 1, Author: Author{Name: "minux", Email: "minux@m.x"},
+			CommitMessage: CommitMessage{Summary: "Add a.json"}},
+		{Revision: 2, Author: Author{Name: "minux", Email: "minux@m.x"},
+			CommitMessage: CommitMessage{Summary: "Edit a.json"}}}
 	if !reflect.DeepEqual(history, want) {
 		t.Errorf("GetHistory returned %+v, want %+v", history, want)
 	}

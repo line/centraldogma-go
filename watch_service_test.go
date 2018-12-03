@@ -47,11 +47,12 @@ func TestWatchFile(t *testing.T) {
 		})
 
 	query := &Query{Path: "/a.json", Type: Identity}
-	watchResult := c.WatchFile(context.Background(), "foo", "bar", "-1", query, 1*time.Second)
+	watchResult, closer, _ := c.WatchFile(context.Background(), "foo", "bar", query, 1*time.Second)
+	defer closer()
 
-	entryWant := &Entry{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}}
-	commitWant := &Commit{Revision: 3, Author: &Author{Name: "minux", Email: "minux@m.x"},
-		CommitMessage: &CommitMessage{Summary: "Add a.json"}}
+	entryWant := Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
+	commitWant := Commit{Revision: 3, Author: Author{Name: "minux", Email: "minux@m.x"},
+		CommitMessage: CommitMessage{Summary: "Add a.json"}}
 	select {
 	case result := <-watchResult:
 		if !reflect.DeepEqual(result.Commit, commitWant) {
@@ -81,11 +82,12 @@ func TestWatchFileInvalidPath(t *testing.T) {
 		})
 
 	query := &Query{Path: "a.json", Type: Identity}
-	watchResult := c.WatchFile(context.Background(), "foo", "bar", "-1", query, 1*time.Second)
+	watchResult, closer, _ := c.WatchFile(context.Background(), "foo", "bar", query, 1*time.Second)
+	defer closer()
 
-	entryWant := &Entry{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}}
-	commitWant := &Commit{Revision: 3, Author: &Author{Name: "minux", Email: "minux@m.x"},
-		CommitMessage: &CommitMessage{Summary: "Add a.json"}}
+	entryWant := Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
+	commitWant := Commit{Revision: 3, Author: Author{Name: "minux", Email: "minux@m.x"},
+		CommitMessage: CommitMessage{Summary: "Add a.json"}}
 	select {
 	case result := <-watchResult:
 		if !reflect.DeepEqual(result.Commit, commitWant) {
@@ -106,7 +108,11 @@ func TestWatcher(t *testing.T) {
 	expectedLastKnownRevision := 1
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, http.MethodGet)
-		testHeader(t, r, "if-none-match", strconv.Itoa(expectedLastKnownRevision))
+		if expectedLastKnownRevision == 1 { // first revision
+			testHeader(t, r, "if-none-match", "-1")
+		} else {
+			testHeader(t, r, "if-none-match", strconv.Itoa(expectedLastKnownRevision))
+		}
 		testHeader(t, r, "prefer", "wait=60") // watchTimeout is 60 seconds
 
 		// Let's pretend that the content is modified after 100 millisecond and the revision is increased by 1.
@@ -124,11 +130,12 @@ func TestWatcher(t *testing.T) {
 
 	query := &Query{Path: "/a.json", Type: Identity}
 	fw, _ := c.FileWatcher("foo", "bar", query)
+	defer fw.Close()
 
-	myCh1 := make(chan interface{}, 128)
-	myCh2 := make(chan interface{}, 128)
-	listener1 := func(revision int, value interface{}) { myCh1 <- value }
-	listener2 := func(revision int, value interface{}) { myCh2 <- value }
+	myCh1 := make(chan WatchResult, 128)
+	myCh2 := make(chan WatchResult, 128)
+	listener1 := func(value WatchResult) { myCh1 <- value }
+	listener2 := func(value WatchResult) { myCh2 <- value }
 
 	fw.Watch(listener1)
 	fw.Watch(listener2)
@@ -139,17 +146,15 @@ func TestWatcher(t *testing.T) {
 		testChannelValue(t, myCh2, want)
 		want++
 	}
-	fw.Close()
 }
 
-func testChannelValue(t *testing.T, myCh <-chan interface{}, want int) {
+func testChannelValue(t *testing.T, myCh <-chan WatchResult, want int) {
 	select {
 	case value := <-myCh:
 		aStruct := struct {
 			A int `json:"a"`
 		}{}
-		d, _ := json.Marshal(value)
-		json.Unmarshal(d, &aStruct)
+		json.Unmarshal(value.Entry.Content, &aStruct)
 		if aStruct.A != want {
 			t.Errorf("watch returned: %v, want %v", aStruct.A, want)
 		}
@@ -181,8 +186,8 @@ func TestWatcher_convertingValueFunc(t *testing.T) {
 	query := &Query{Path: "/a.json", Type: Identity}
 	fw, _ := c.FileWatcher("foo", "bar", query)
 
-	myCh := make(chan interface{}, 128)
-	listener := func(revision int, value interface{}) { myCh <- value }
+	myCh := make(chan WatchResult, 128)
+	listener := func(value WatchResult) { myCh <- value }
 	fw.Watch(listener)
 
 	want := 2
@@ -192,8 +197,7 @@ func TestWatcher_convertingValueFunc(t *testing.T) {
 			aStruct := struct {
 				A int `json:"a"`
 			}{}
-			d, _ := json.Marshal(value)
-			json.Unmarshal(d, &aStruct)
+			json.Unmarshal(value.Entry.Content, &aStruct)
 			if aStruct.A != want {
 				t.Errorf("watch returned: %v, want %v", aStruct.A, want)
 			}
@@ -210,7 +214,7 @@ func TestWatcher_closed_AwaitInitialValue(t *testing.T) {
 	defer teardown()
 
 	query := &Query{Path: "/a.json", Type: Identity}
-	fw, _ := c.watch.fileWatcher("foo", "bar", query)
+	fw, _ := c.watch.fileWatcher(context.Background(), "foo", "bar", query)
 
 	latest := fw.Latest()
 	want := "latest is not set yet"
@@ -241,14 +245,20 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 		})
 
 	query := &Query{Path: "/a.json", Type: Identity}
-	fw, _ := c.watch.fileWatcher("foo", "bar", query)
+	fw, _ := c.watch.fileWatcher(context.Background(), "foo", "bar", query)
+	defer fw.Close()
 
 	done := make(chan struct{})
 	go func() {
 		latest := fw.AwaitInitialValue()
+		if latest == nil {
+			t.Errorf("latest from AwaitInitialValue is not valid")
+			t.FailNow()
+		}
+
 		want := 3
-		if latest.Revision != want {
-			t.Errorf("latest from AwaitInitialValue: %+v, want %+v", latest.Revision, want)
+		if latest.Commit.Revision != want {
+			t.Errorf("latest from AwaitInitialValue: %+v, want %+v", latest.Commit.Revision, want)
 		}
 
 		latest2 := fw.Latest()
@@ -260,7 +270,6 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 	}()
 	fw.start()
 	<-done
-	fw.Close()
 }
 
 func TestRepoWatcher(t *testing.T) {
@@ -282,9 +291,10 @@ func TestRepoWatcher(t *testing.T) {
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/**", handler)
 
 	fw, _ := c.RepoWatcher("foo", "bar", "/**")
+	defer fw.Close()
 
-	myCh := make(chan interface{}, 128)
-	listener := func(revision int, value interface{}) { myCh <- value }
+	myCh := make(chan int, 128)
+	listener := func(value WatchResult) { myCh <- value.Commit.Revision }
 	fw.Watch(listener)
 
 	want := 2
@@ -299,7 +309,6 @@ func TestRepoWatcher(t *testing.T) {
 		}
 		want++
 	}
-	fw.Close()
 }
 
 func TestRepoWatcherInvalidPathPattern(t *testing.T) {
@@ -325,8 +334,8 @@ func TestRepoWatcherInvalidPathPattern(t *testing.T) {
 	for _, pattern := range patterns {
 		fw, _ := c.RepoWatcher("foo", "bar", pattern)
 
-		myCh := make(chan interface{}, 128)
-		listener := func(revision int, value interface{}) { myCh <- value }
+		myCh := make(chan int, 128)
+		listener := func(value WatchResult) { myCh <- value.Commit.Revision }
 		fw.Watch(listener)
 
 		for i := 0; i < 10; i++ {

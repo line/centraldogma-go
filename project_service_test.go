@@ -46,7 +46,7 @@ func TestCreateProject(t *testing.T) {
 	project, res, _ := c.CreateProject(context.Background(), input.Name)
 	testStatus(t, res, 201)
 
-	want := &Project{Name: "foo", Creator: &Author{Name: "minux", Email: "minux@m.x"}}
+	want := &Project{Name: "foo", Creator: Author{Name: "minux", Email: "minux@m.x"}}
 	if !reflect.DeepEqual(project, want) {
 		t.Errorf("CreateProject returned %+v, want %+v", project, want)
 	}
@@ -79,7 +79,7 @@ func TestUnremoveProject(t *testing.T) {
 
 	project, _, _ := c.UnremoveProject(context.Background(), "foo")
 
-	want := &Project{Name: "foo", Creator: &Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/foo"}
+	want := &Project{Name: "foo", Creator: Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/foo"}
 	if !reflect.DeepEqual(project, want) {
 		t.Errorf("UnremoveProject returned %+v, want %+v", project, want)
 	}
@@ -98,8 +98,8 @@ func TestListProject(t *testing.T) {
 
 	projects, _, _ := c.ListProjects(context.Background())
 	want := []*Project{
-		{Name: "foo", Creator: &Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/foo"},
-		{Name: "bar", Creator: &Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/bar"}}
+		{Name: "foo", Creator: Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/foo"},
+		{Name: "bar", Creator: Author{Name: "minux", Email: "minux@m.x"}, URL: "/api/v1/projects/bar"}}
 	if !reflect.DeepEqual(projects, want) {
 		t.Errorf("ListProjects returned %+v, want %+v", projects, want)
 	}
