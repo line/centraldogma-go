@@ -86,7 +86,11 @@ type EntryContent []byte
 
 func (e *EntryContent) UnmarshalJSON(b []byte) error {
 	if n := len(b); n >= 2 && b[0] == 34 && b[n-1] == 34 { // string
-		*e = b[1 : n-1]
+		var dst string
+		if err := json.Unmarshal(b, &dst); err != nil {
+			return err
+		}
+		*e = []byte(dst)
 	} else {
 		*e = b
 	}

@@ -308,3 +308,30 @@ func TestPush_TwoFiles(t *testing.T) {
 		t.Errorf("Push returned %+v, want %+v", pushResult, want)
 	}
 }
+
+func TestGetTextFile(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	content := "foo\nb\"rb\\z"
+
+	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/b.txt",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, http.MethodGet)
+			mar, _ := json.Marshal(map[string]interface{}{
+				"path":    "/b.txt",
+				"type":    "TEXT",
+				"content": content,
+			})
+			fmt.Fprint(w, string(mar))
+		})
+
+	query := &Query{Path: "/b.txt", Type: Identity}
+	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
+	want := &Entry{Path: "/b.txt", Type: Text, Content: EntryContent(content)}
+	if !reflect.DeepEqual(entry, want) {
+		t.Errorf("GetFile returned %+v, want %+v", entry, want)
+	} else {
+		t.Log(string(entry.Content))
+	}
+}
