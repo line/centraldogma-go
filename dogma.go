@@ -413,7 +413,7 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 //
 //    query := &Query{Path: "/a.json", Type: Identity}
 //    ctx := context.Background()
-//    changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Second)
+//    changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Minute)
 //    if err != nil {
 //		 panic(err)
 //    }
@@ -460,7 +460,7 @@ func (c *Client) WatchFile(
 //
 //    query := &Query{Path: "/a.json", Type: Identity}
 //    ctx := context.Background()
-//    changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Second)
+//    changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Minute)
 //    if err != nil {
 //		 panic(err)
 //    }
