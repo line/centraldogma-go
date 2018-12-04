@@ -404,13 +404,39 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 }
 
 // WatchFile watches on file changes. The watched result will be returned
-// through the returned channel. The api also provides manual closer to stop watching
+// through the returned channel. The API also provides a manual closer to stop watching
 // and release underlying resources.
 // In short, watching will be stopped in case either context is cancelled or closer is
 // called.
 // Manually closing returned channel is unsafe and may cause sending on closed channel error.
-func (c *Client) WatchFile(ctx context.Context, projectName, repoName string,
-	query *Query, timeout time.Duration) (result <-chan WatchResult, closer func(), err error) {
+// Usage:
+//
+//    query := &Query{Path: "/a.json", Type: Identity}
+//    ctx := context.Background()
+//    changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Second)
+//    if err != nil {
+//		 panic(err)
+//    }
+//    defer closer() // stop watching and release underlying resources.
+//
+//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//
+//    for {
+//        select {
+//  		case <-ctx.Done():
+//				...
+//
+//			case change := <-changes:
+//             // got change
+//             json.Unmarshal(change.Entry.Content, &expect)
+//             ...
+//        }
+//    }
+func (c *Client) WatchFile(
+	ctx context.Context,
+	projectName, repoName string, query *Query,
+	timeout time.Duration,
+) (result <-chan WatchResult, closer func(), err error) {
 
 	var w *Watcher
 
@@ -425,13 +451,39 @@ func (c *Client) WatchFile(ctx context.Context, projectName, repoName string,
 }
 
 // WatchRepository watches on repository changes. The watched result will be returned
-// through the returned channel. The api also provides manual closer to stop watching
+// through the returned channel. The API also provides a manual closer to stop watching
 // and release underlying resources.
 // In short, watching will be stopped in case either context is cancelled or closer is
 // called.
 // Manually closing returned channel is unsafe and may cause sending on closed channel error.
-func (c *Client) WatchRepository(ctx context.Context,
-	projectName, repoName, lastKnownRevision, pathPattern string, timeout time.Duration) (result <-chan WatchResult, closer func(), err error) {
+// Usage:
+//
+//    query := &Query{Path: "/a.json", Type: Identity}
+//    ctx := context.Background()
+//    changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Second)
+//    if err != nil {
+//		 panic(err)
+//    }
+//    defer closer() // stop watching and release underlying resources.
+//
+//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//
+//    for {
+//        select {
+//  		case <-ctx.Done():
+//				...
+//
+//			case change := <-changes:
+//             // got change
+//             json.Unmarshal(change.Entry.Content, &expect)
+//             ...
+//        }
+//    }
+func (c *Client) WatchRepository(
+	ctx context.Context,
+	projectName, repoName, pathPattern string,
+	timeout time.Duration,
+) (result <-chan WatchResult, closer func(), err error) {
 
 	var w *Watcher
 

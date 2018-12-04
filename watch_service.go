@@ -142,7 +142,7 @@ const (
 )
 
 // WatchListener listens to Watcher.
-type WatchListener func(v WatchResult)
+type WatchListener func(result WatchResult)
 
 // Watcher watches the changes of a repository or a file.
 type Watcher struct {

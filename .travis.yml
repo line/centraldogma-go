@@ -7,12 +7,12 @@ env:
   - GO111MODULE=on
 go_import_path: go.linecorp.com/centraldogma
 script:
-- source=$GOPATH/src/go.linecorp.com/centraldogma
-- cd $source
-- go test -v -race -coverprofile=$source/coverage.1.txt -covermode=atomic
-- cd $source/internal/app/dogma
-- go test -v -race -coverprofile=$source/coverage.2.txt -covermode=atomic
-- cd $source
+- SRCDIR=$GOPATH/src/go.linecorp.com/centraldogma
+- cd $SRCDIR
+- go test -v -race -coverprofile=$SRCDIR/coverage.1.txt -covermode=atomic
+- cd $SRCDIR/internal/app/dogma
+- go test -v -race -coverprofile=$SRCDIR/coverage.2.txt -covermode=atomic
+- cd $SRCDIR
 - cat coverage.*.txt > coverage.txt
 after_success:
 - bash <(curl -s https://codecov.io/bash)
