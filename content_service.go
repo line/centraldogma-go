@@ -46,12 +46,12 @@ const (
 
 // Entry represents an entry in the repository.
 type Entry struct {
-	Path       string      `json:"path"`
-	Type       EntryType   `json:"type"` // can be JSON, TEXT or DIRECTORY
-	Content    interface{} `json:"content,omitempty"`
-	Revision   string      `json:"revision,omitempty"`
-	URL        string      `json:"url,omitempty"`
-	ModifiedAt string      `json:"modifiedAt,omitempty"`
+	Path       string       `json:"path"`
+	Type       EntryType    `json:"type"` // can be JSON, TEXT or DIRECTORY
+	Content    EntryContent `json:"content,omitempty"`
+	Revision   string       `json:"revision,omitempty"`
+	URL        string       `json:"url,omitempty"`
+	ModifiedAt string       `json:"modifiedAt,omitempty"`
 }
 
 func (c *Entry) MarshalJSON() ([]byte, error) {
@@ -81,6 +81,22 @@ func (c *Entry) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// EntryContent represents the content of an entry
+type EntryContent []byte
+
+func (e *EntryContent) UnmarshalJSON(b []byte) error {
+	if n := len(b); n >= 2 && b[0] == 34 && b[n-1] == 34 { // string
+		var dst string
+		if err := json.Unmarshal(b, &dst); err != nil {
+			return err
+		}
+		*e = []byte(dst)
+	} else {
+		*e = b
+	}
+	return nil
+}
+
 // PushResult represents a result of push in the repository.
 type PushResult struct {
 	Revision int    `json:"revision"`
@@ -89,10 +105,10 @@ type PushResult struct {
 
 // Commit represents a commit in the repository.
 type Commit struct {
-	Revision      int            `json:"revision"`
-	Author        *Author        `json:"author"`
-	CommitMessage *CommitMessage `json:"commitMessage,omitempty"`
-	PushedAt      string         `json:"pushedAt,omitempty"`
+	Revision      int           `json:"revision"`
+	Author        Author        `json:"author,omitempty"`
+	CommitMessage CommitMessage `json:"commitMessage,omitempty"`
+	PushedAt      string        `json:"pushedAt,omitempty"`
 }
 
 // CommitMessages represents a commit message in the repository.

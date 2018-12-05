@@ -68,7 +68,7 @@ func TestGetFile(t *testing.T) {
 
 	query := &Query{Path: "/b.txt", Type: Identity}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/b.txt", Type: Text, Content: "hello world~!"}
+	want := &Entry{Path: "/b.txt", Type: Text, Content: EntryContent("hello world~!")}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -86,7 +86,7 @@ func TestGetFile_JSON(t *testing.T) {
 
 	query := &Query{Path: "/a.json", Type: Identity}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -105,7 +105,7 @@ func TestGetFile_WithJSONPath(t *testing.T) {
 
 	query := &Query{Path: "/a.json", Type: JSONPath, Expressions: []string{"$.a"}}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: "b"}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent("b")}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -120,12 +120,12 @@ func TestGetFile_WithJSONPathAndRevision(t *testing.T) {
 			testMethod(t, r, http.MethodGet)
 			testURLQuery(t, r, "jsonpath", "$.a")
 			testURLQuery(t, r, "revision", "-1")
-			fmt.Fprint(w, `{"path":"/a.json", "type":"JSON", "content":"b"}`)
+			fmt.Fprint(w, `{"path":"/a.json", "type":"JSON", "content":    "b"}`)
 		})
 
 	query := &Query{Path: "/a.json", Type: JSONPath, Expressions: []string{"$.a"}}
 	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "-1", query)
-	want := &Entry{Path: "/a.json", Type: JSON, Content: "b"}
+	want := &Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`b`)}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
 	}
@@ -142,8 +142,10 @@ func TestGetFiles(t *testing.T) {
 	})
 
 	entries, _, _ := c.GetFiles(context.Background(), "foo", "bar", "", "/**")
-	want := []*Entry{{Path: "/a.json", Type: JSON, Content: map[string]interface{}{"a": "b"}},
-		{Path: "/b.txt", Type: Text, Content: "hello world~!"}}
+	want := []*Entry{
+		{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)},
+		{Path: "/b.txt", Type: Text, Content: EntryContent(`hello world~!`)},
+	}
 	if !reflect.DeepEqual(entries, want) {
 		t.Errorf("GetFiles returned %+v, want %+v", entries, want)
 	}
@@ -166,10 +168,10 @@ func TestGetHistory(t *testing.T) {
 
 	history, _, _ := c.GetHistory(context.Background(), "foo", "bar", "-2", "-1", "/**", 2)
 	want := []*Commit{
-		{Revision: 1, Author: &Author{Name: "minux", Email: "minux@m.x"},
-			CommitMessage: &CommitMessage{Summary: "Add a.json"}},
-		{Revision: 2, Author: &Author{Name: "minux", Email: "minux@m.x"},
-			CommitMessage: &CommitMessage{Summary: "Edit a.json"}}}
+		{Revision: 1, Author: Author{Name: "minux", Email: "minux@m.x"},
+			CommitMessage: CommitMessage{Summary: "Add a.json"}},
+		{Revision: 2, Author: Author{Name: "minux", Email: "minux@m.x"},
+			CommitMessage: CommitMessage{Summary: "Edit a.json"}}}
 	if !reflect.DeepEqual(history, want) {
 		t.Errorf("GetHistory returned %+v, want %+v", history, want)
 	}
@@ -304,5 +306,32 @@ func TestPush_TwoFiles(t *testing.T) {
 	want := &PushResult{Revision: 3, PushedAt: "2017-05-22T00:00:00Z"}
 	if !reflect.DeepEqual(pushResult, want) {
 		t.Errorf("Push returned %+v, want %+v", pushResult, want)
+	}
+}
+
+func TestGetTextFile(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	content := "foo\nb\"rb\\z"
+
+	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/b.txt",
+		func(w http.ResponseWriter, r *http.Request) {
+			testMethod(t, r, http.MethodGet)
+			mar, _ := json.Marshal(map[string]interface{}{
+				"path":    "/b.txt",
+				"type":    "TEXT",
+				"content": content,
+			})
+			fmt.Fprint(w, string(mar))
+		})
+
+	query := &Query{Path: "/b.txt", Type: Identity}
+	entry, _, _ := c.GetFile(context.Background(), "foo", "bar", "", query)
+	want := &Entry{Path: "/b.txt", Type: Text, Content: EntryContent(content)}
+	if !reflect.DeepEqual(entry, want) {
+		t.Errorf("GetFile returned %+v, want %+v", entry, want)
+	} else {
+		t.Log(string(entry.Content))
 	}
 }

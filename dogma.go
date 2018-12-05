@@ -385,20 +385,120 @@ func (c *Client) Push(ctx context.Context, projectName, repoName, baseRevision s
 	return c.content.push(ctx, projectName, repoName, baseRevision, commitMessage, changes)
 }
 
-// WatchFile awaits and returns the query result of the specified file since the specified last known revision.
-func (c *Client) WatchFile(ctx context.Context, projectName, repoName, lastKnownRevision string,
-	query *Query, timeout time.Duration) <-chan *WatchResult {
-	return c.watch.watchFile(ctx, projectName, repoName, lastKnownRevision, query, timeout)
+func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer func()) {
+	// setup watching channel
+	ch := make(chan WatchResult, DefaultChannelBuffer)
+	result = ch
+	w.Watch(func(value WatchResult) {
+		ch <- value
+	})
+
+	// setup closer
+	closer = func() {
+		w.Close()
+	}
+
+	// start watching
+	w.start()
+	return
 }
 
-// WatchRepository awaits and returns the latest known revision since the specified revision.
-func (c *Client) WatchRepository(ctx context.Context,
-	projectName, repoName, lastKnownRevision, pathPattern string, timeout time.Duration) <-chan *WatchResult {
-	return c.watch.watchRepo(ctx, projectName, repoName, lastKnownRevision, pathPattern, timeout)
+// WatchFile watches on file changes. The watched result will be returned
+// through the returned channel. The API also provides a manual closer to stop watching
+// and release underlying resources.
+// In short, watching will be stopped in case either context is cancelled or closer is
+// called.
+// Manually closing returned channel is unsafe and may cause sending on closed channel error.
+// Usage:
+//
+//    query := &Query{Path: "/a.json", Type: Identity}
+//    ctx := context.Background()
+//    changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Minute)
+//    if err != nil {
+//		 panic(err)
+//    }
+//    defer closer() // stop watching and release underlying resources.
+//
+//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//
+//    for {
+//        select {
+//          case <-ctx.Done():
+//             ...
+//
+//          case change := <-changes:
+//             // got change
+//             json.Unmarshal(change.Entry.Content, &expect)
+//             ...
+//        }
+//    }
+func (c *Client) WatchFile(
+	ctx context.Context,
+	projectName, repoName string, query *Query,
+	timeout time.Duration,
+) (result <-chan WatchResult, closer func(), err error) {
+
+	var w *Watcher
+
+	// initialize watcher
+	w, err = c.watch.fileWatcherWithTimeout(ctx, projectName, repoName, query, timeout)
+	if err != nil {
+		return
+	}
+
+	result, closer = c.watchWithWatcher(w)
+	return
 }
 
-//FileWatcher returns a Watcher which notifies its listeners when the result of the given Query becomes
-//available or changes. For example:
+// WatchRepository watches on repository changes. The watched result will be returned
+// through the returned channel. The API also provides a manual closer to stop watching
+// and release underlying resources.
+// In short, watching will be stopped in case either context is cancelled or closer is
+// called.
+// Manually closing returned channel is unsafe and may cause sending on closed channel error.
+// Usage:
+//
+//    query := &Query{Path: "/a.json", Type: Identity}
+//    ctx := context.Background()
+//    changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Minute)
+//    if err != nil {
+//		 panic(err)
+//    }
+//    defer closer() // stop watching and release underlying resources.
+//
+//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//
+//    for {
+//        select {
+//          case <-ctx.Done():
+//             ...
+//
+//          case change := <-changes:
+//             // got change
+//             json.Unmarshal(change.Entry.Content, &expect)
+//             ...
+//        }
+//    }
+func (c *Client) WatchRepository(
+	ctx context.Context,
+	projectName, repoName, pathPattern string,
+	timeout time.Duration,
+) (result <-chan WatchResult, closer func(), err error) {
+
+	var w *Watcher
+
+	// initialize watcher
+	w, err = c.watch.repoWatcherWithTimeout(ctx, projectName, repoName, pathPattern, timeout)
+	if err != nil {
+		return
+	}
+
+	result, closer = c.watchWithWatcher(w)
+	return
+}
+
+// FileWatcher returns a Watcher which notifies its listeners when the result of the given Query becomes
+// available or changes. For example:
 //
 //    query := &Query{Path: "/a.json", Type: Identity}
 //    watcher := client.FileWatcher("foo", "bar", query)
@@ -409,7 +509,7 @@ func (c *Client) WatchRepository(ctx context.Context,
 //    })
 //    myValue := <-myCh
 func (c *Client) FileWatcher(projectName, repoName string, query *Query) (*Watcher, error) {
-	fw, err := c.watch.fileWatcher(projectName, repoName, query)
+	fw, err := c.watch.fileWatcher(context.Background(), projectName, repoName, query)
 	if err != nil {
 		return nil, err
 	}
@@ -417,8 +517,8 @@ func (c *Client) FileWatcher(projectName, repoName string, query *Query) (*Watch
 	return fw, nil
 }
 
-//RepoWatcher returns a Watcher which notifies its listeners when the repository that matched the given
-//pathPattern becomes available or changes. For example:
+// RepoWatcher returns a Watcher which notifies its listeners when the repository that matched the given
+// pathPattern becomes available or changes. For example:
 //
 //    watcher := client.RepoWatcher("foo", "bar", "/*.json")
 //
@@ -428,7 +528,7 @@ func (c *Client) FileWatcher(projectName, repoName string, query *Query) (*Watch
 //    })
 //    myValue := <-myCh
 func (c *Client) RepoWatcher(projectName, repoName, pathPattern string) (*Watcher, error) {
-	rw, err := c.watch.repoWatcher(projectName, repoName, pathPattern)
+	rw, err := c.watch.repoWatcher(context.Background(), projectName, repoName, pathPattern)
 	if err != nil {
 		return nil, err
 	}
