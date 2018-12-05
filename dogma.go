@@ -423,10 +423,10 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 //
 //    for {
 //        select {
-//  		case <-ctx.Done():
-//				...
+//          case <-ctx.Done():
+//             ...
 //
-//			case change := <-changes:
+//          case change := <-changes:
 //             // got change
 //             json.Unmarshal(change.Entry.Content, &expect)
 //             ...
@@ -470,10 +470,10 @@ func (c *Client) WatchFile(
 //
 //    for {
 //        select {
-//  		case <-ctx.Done():
-//				...
+//          case <-ctx.Done():
+//             ...
 //
-//			case change := <-changes:
+//          case change := <-changes:
 //             // got change
 //             json.Unmarshal(change.Entry.Content, &expect)
 //             ...
