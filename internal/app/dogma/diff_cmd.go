@@ -46,7 +46,7 @@ func (d *diffCommand) execute(c *cli.Context) error {
 	}
 
 	for _, change := range changes {
-		data, err := marshalIndent(change)
+		data, err := marshalIndentObject(change)
 		if err != nil {
 			return err
 		}
