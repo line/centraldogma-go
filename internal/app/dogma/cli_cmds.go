@@ -106,7 +106,7 @@ func getPrintStyle(c *cli.Context) (PrintStyle, error) {
 
 func printWithStyle(data interface{}, format PrintStyle) {
 	// TODO implement this method
-	buf, _ := marshalIndent(data)
+	buf, _ := marshalIndentObject(data)
 	fmt.Printf("%s\n", buf)
 }
 

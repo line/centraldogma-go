@@ -21,6 +21,8 @@ import (
 	"os/signal"
 	"strings"
 
+	dogma "go.linecorp.com/centraldogma"
+
 	"github.com/urfave/cli"
 )
 
@@ -50,25 +52,21 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 	}
 
 	cleanupDone := make(chan bool)
-	listener := func(revision int, value interface{}) {
+	listener := func(watchResult dogma.WatchResult) {
+		revision := watchResult.Commit.Revision
 		if revision > normalizedRevision {
 			fmt.Printf("Watcher noticed updated file: %s/%s%s, rev=%v\n",
 				repo.projName, repo.repoName, repo.path, revision)
 			content := ""
 			if strings.HasSuffix(strings.ToLower(repo.path), ".json") {
-				b, err := marshalIndent(value)
+				b, err := marshalIndent(watchResult.Entry.Content)
 				if err != nil {
-					fmt.Printf("Failed to print the content: %v", value)
+					fmt.Printf("Failed to print the content: %v", string(watchResult.Entry.Content))
 					return
 				}
 				content = string(b)
 			} else {
-				if str, ok := value.(string); ok {
-					content = str
-				} else {
-					fmt.Printf("Failed to print the content: %v", value)
-					return
-				}
+				content = string(watchResult.Entry.Content)
 			}
 			fmt.Printf("Content:\n%s\n", content)
 
