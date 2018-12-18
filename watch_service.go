@@ -30,15 +30,10 @@ type watchService service
 
 // WatchResult represents a result from watch operation.
 type WatchResult struct {
-	Commit Commit
-	Entry  Entry
-	Res    *http.Response
-	Err    error
-}
-
-type commitWithEntry struct {
-	Commit
-	Entry Entry `json:"entry,omitempty"`
+	Revision int   `json:"revision"`
+	Entry    Entry `json:"entry,omitempty"`
+	Res      *http.Response
+	Err      error
 }
 
 func (ws *watchService) watchFile(
@@ -115,9 +110,8 @@ func (ws *watchService) watchRequest(
 	reqCtx, cancel := context.WithTimeout(ctx, timeout+time.Second) // wait more than server
 	defer cancel()
 
-	// do request
-	commitWithEntry := new(commitWithEntry)
-	res, err := ws.client.do(reqCtx, req, commitWithEntry)
+	watchResult := new(WatchResult)
+	res, err := ws.client.do(reqCtx, req, watchResult)
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = fmt.Errorf("watch request timeout: %.3f second(s)", timeout.Seconds())
@@ -125,11 +119,8 @@ func (ws *watchService) watchRequest(
 		return &WatchResult{Res: res, Err: err}
 	}
 
-	return &WatchResult{
-		Commit: commitWithEntry.Commit,
-		Entry:  commitWithEntry.Entry,
-		Res:    res,
-	}
+	watchResult.Res = res
+	return watchResult
 }
 
 const defaultWatchTimeout = 1 * time.Minute
@@ -337,10 +328,10 @@ func (w *Watcher) doWatch() {
 
 	var lastKnownRevision int
 	curLatest := w.getLatest()
-	if curLatest == nil || curLatest.Commit.Revision == 0 {
+	if curLatest == nil || curLatest.Revision == 0 {
 		lastKnownRevision = 1 // Init revision
 	} else {
-		lastKnownRevision = curLatest.Commit.Revision
+		lastKnownRevision = curLatest.Revision
 	}
 
 	// do watch with context
@@ -376,7 +367,7 @@ func (w *Watcher) doWatch() {
 
 	// log latest revision
 	log.Debugf("Watcher noticed updated file: %s/%s%s, rev=%v",
-		w.projectName, w.repoName, w.pathPattern, watchResult.Commit.Revision)
+		w.projectName, w.repoName, w.pathPattern, watchResult.Revision)
 
 	// notify listener
 	w.notifyListeners()
