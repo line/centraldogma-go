@@ -1,1 +1,5 @@
+# Build output
 internal/app/dogma/dogma
+
+# GoLand
+.idea
