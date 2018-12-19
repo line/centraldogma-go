@@ -62,8 +62,8 @@ func testBody(t *testing.T, req *http.Request, want string) {
 	}
 }
 
-func testStatusCode(t *testing.T, statusCode int, want int) {
-	if got := statusCode; got != want {
+func testStatusCode(t *testing.T, httpStatusCode int, want int) {
+	if got := httpStatusCode; got != want {
 		t.Errorf("Response status: %v, want %v", got, want)
 	}
 }

@@ -43,8 +43,8 @@ func TestCreateProject(t *testing.T) {
 		fmt.Fprint(w, `{"name":"foo", "creator":{"name":"minux", "email":"minux@m.x"}}`)
 	})
 
-	project, statusCode, _ := c.CreateProject(context.Background(), input.Name)
-	testStatusCode(t, statusCode, 201)
+	project, httpStatusCode, _ := c.CreateProject(context.Background(), input.Name)
+	testStatusCode(t, httpStatusCode, 201)
 
 	want := &Project{Name: "foo", Creator: Author{Name: "minux", Email: "minux@m.x"}}
 	if !reflect.DeepEqual(project, want) {
@@ -61,8 +61,8 @@ func TestRemoveProject(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	statusCode, _ := c.RemoveProject(context.Background(), "foo")
-	testStatusCode(t, statusCode, 204)
+	httpStatusCode, _ := c.RemoveProject(context.Background(), "foo")
+	testStatusCode(t, httpStatusCode, 204)
 }
 
 func TestUnremoveProject(t *testing.T) {

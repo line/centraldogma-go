@@ -30,10 +30,10 @@ type watchService service
 
 // WatchResult represents a result from watch operation.
 type WatchResult struct {
-	Revision   int   `json:"revision"`
-	Entry      Entry `json:"entry,omitempty"`
-	StatusCode int
-	Err        error
+	Revision       int   `json:"revision"`
+	Entry          Entry `json:"entry,omitempty"`
+	HttpStatusCode int
+	Err            error
 }
 
 func (ws *watchService) watchFile(
@@ -116,10 +116,10 @@ func (ws *watchService) watchRequest(
 		if err == context.DeadlineExceeded {
 			err = fmt.Errorf("watch request timeout: %.3f second(s)", timeout.Seconds())
 		}
-		return &WatchResult{StatusCode: res.StatusCode, Err: err}
+		return &WatchResult{HttpStatusCode: res.StatusCode, Err: err}
 	}
 
-	watchResult.StatusCode = res.StatusCode
+	watchResult.HttpStatusCode = res.StatusCode
 	return watchResult
 }
 
