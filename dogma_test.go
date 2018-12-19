@@ -62,8 +62,8 @@ func testBody(t *testing.T, req *http.Request, want string) {
 	}
 }
 
-func testStatus(t *testing.T, res *http.Response, want int) {
-	if got := res.StatusCode; got != want {
+func testStatusCode(t *testing.T, statusCode int, want int) {
+	if got := statusCode; got != want {
 		t.Errorf("Response status: %v, want %v", got, want)
 	}
 }
@@ -100,7 +100,7 @@ func TestNewClient(t *testing.T) {
 	req, _ := c.newRequest(http.MethodGet, "/test", nil)
 
 	res, _ := c.do(context.Background(), req, nil)
-	testStatus(t, res, 200)
+	testStatusCode(t, res.StatusCode, 200)
 }
 
 func TestNewClientWithHTTPClient(t *testing.T) {

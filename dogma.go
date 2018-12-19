@@ -250,63 +250,63 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 }
 
 // CreateProject creates a project.
-func (c *Client) CreateProject(ctx context.Context, name string) (*Project, *http.Response, error) {
+func (c *Client) CreateProject(ctx context.Context, name string) (pro *Project, statusCode int, err error) {
 	return c.project.create(ctx, name)
 }
 
 // RemoveProject removes a project. A removed project can be unremoved using UnremoveProject.
-func (c *Client) RemoveProject(ctx context.Context, name string) (*http.Response, error) {
+func (c *Client) RemoveProject(ctx context.Context, name string) (statusCode int, err error) {
 	return c.project.remove(ctx, name)
 }
 
 // UnremoveProject unremoves a removed project.
-func (c *Client) UnremoveProject(ctx context.Context, name string) (*Project, *http.Response, error) {
+func (c *Client) UnremoveProject(ctx context.Context, name string) (pro *Project, statusCode int, err error) {
 	return c.project.unremove(ctx, name)
 }
 
 // ListProjects returns the list of projects.
-func (c *Client) ListProjects(ctx context.Context) ([]*Project, *http.Response, error) {
+func (c *Client) ListProjects(ctx context.Context) (pros []*Project, statusCode int, err error) {
 	return c.project.list(ctx)
 }
 
 // ListRemovedProjects returns the list of removed projects.
-func (c *Client) ListRemovedProjects(ctx context.Context) ([]*Project, *http.Response, error) {
+func (c *Client) ListRemovedProjects(ctx context.Context) (removedPros []*Project, statusCode int, err error) {
 	return c.project.listRemoved(ctx)
 }
 
 // CreateRepository creates a repository.
 func (c *Client) CreateRepository(
-	ctx context.Context, projectName, repoName string) (*Repository, *http.Response, error) {
+	ctx context.Context, projectName, repoName string) (repo *Repository, statusCode int, err error) {
 	return c.repository.create(ctx, projectName, repoName)
 }
 
 // RemoveRepository removes a repository. A removed repository can be unremoved using UnremoveRepository.
-func (c *Client) RemoveRepository(ctx context.Context, projectName, repoName string) (*http.Response, error) {
+func (c *Client) RemoveRepository(ctx context.Context, projectName, repoName string) (statusCode int, err error) {
 	return c.repository.remove(ctx, projectName, repoName)
 }
 
 // UnremoveRepository unremoves a repository.
 func (c *Client) UnremoveRepository(
-	ctx context.Context, projectName, repoName string) (*Repository, *http.Response, error) {
+	ctx context.Context, projectName, repoName string) (repo *Repository, statusCode int, err error) {
 	return c.repository.unremove(ctx, projectName, repoName)
 }
 
 // ListRepositories returns the list of repositories.
 func (c *Client) ListRepositories(
-	ctx context.Context, projectName string) ([]*Repository, *http.Response, error) {
+	ctx context.Context, projectName string) (repos []*Repository, statusCode int, err error) {
 	return c.repository.list(ctx, projectName)
 }
 
 // ListRemovedRepositories returns the list of the removed repositories which can be unremoved using
 // UnremoveRepository.
 func (c *Client) ListRemovedRepositories(
-	ctx context.Context, projectName string) ([]*Repository, *http.Response, error) {
+	ctx context.Context, projectName string) (removedRepos []*Repository, statusCode int, err error) {
 	return c.repository.listRemoved(ctx, projectName)
 }
 
 // NormalizeRevision converts the relative revision number to the absolute revision number(e.g. -1 -> 3).
 func (c *Client) NormalizeRevision(
-	ctx context.Context, projectName, repoName, revision string) (int, *http.Response, error) {
+	ctx context.Context, projectName, repoName, revision string) (normalizedRev int, statusCode int, err error) {
 	return c.repository.normalizeRevision(ctx, projectName, repoName, revision)
 }
 
@@ -319,13 +319,14 @@ func (c *Client) NormalizeRevision(
 //     - "*.json,/bar/*.txt": use comma to match any patterns
 //
 func (c *Client) ListFiles(ctx context.Context,
-	projectName, repoName, revision, pathPattern string) ([]*Entry, *http.Response, error) {
+	projectName, repoName, revision, pathPattern string) (entries []*Entry, statusCode int, err error) {
 	return c.content.listFiles(ctx, projectName, repoName, revision, pathPattern)
 }
 
 // GetFile returns the file at the specified revision and path with the specified Query.
 func (c *Client) GetFile(
-	ctx context.Context, projectName, repoName, revision string, query *Query) (*Entry, *http.Response, error) {
+	ctx context.Context, projectName, repoName, revision string, query *Query) (entry *Entry,
+	statusCode int, err error) {
 	return c.content.getFile(ctx, projectName, repoName, revision, query)
 }
 
@@ -338,7 +339,7 @@ func (c *Client) GetFile(
 //     - "*.json,/bar/*.txt": use comma to match any patterns
 //
 func (c *Client) GetFiles(ctx context.Context,
-	projectName, repoName, revision, pathPattern string) ([]*Entry, *http.Response, error) {
+	projectName, repoName, revision, pathPattern string) (entries []*Entry, statusCode int, err error) {
 	return c.content.getFiles(ctx, projectName, repoName, revision, pathPattern)
 }
 
@@ -353,14 +354,15 @@ func (c *Client) GetFiles(ctx context.Context,
 //
 // If the from and to are not specified, this will return the history from the init to the latest revision.
 func (c *Client) GetHistory(ctx context.Context,
-	projectName, repoName, from, to, pathPattern string, maxCommits int) ([]*Commit, *http.Response, error) {
+	projectName, repoName, from, to, pathPattern string, maxCommits int) (commits []*Commit,
+	statusCode int, err error) {
 	return c.content.getHistory(ctx, projectName, repoName, from, to, pathPattern, maxCommits)
 }
 
 // GetDiff returns the diff of a file between two revisions. If the from and to are not specified, this will
 // return the diff from the init to the latest revision.
 func (c *Client) GetDiff(ctx context.Context,
-	projectName, repoName, from, to string, query *Query) (*Change, *http.Response, error) {
+	projectName, repoName, from, to string, query *Query) (change *Change, statusCode int, err error) {
 	return c.content.getDiff(ctx, projectName, repoName, from, to, query)
 }
 
@@ -375,13 +377,13 @@ func (c *Client) GetDiff(ctx context.Context,
 //
 // If the from and to are not specified, this will return the diffs from the init to the latest revision.
 func (c *Client) GetDiffs(ctx context.Context,
-	projectName, repoName, from, to, pathPattern string) ([]*Change, *http.Response, error) {
+	projectName, repoName, from, to, pathPattern string) (changes []*Change, statusCode int, err error) {
 	return c.content.getDiffs(ctx, projectName, repoName, from, to, pathPattern)
 }
 
 // Push pushes the specified changes to the repository.
 func (c *Client) Push(ctx context.Context, projectName, repoName, baseRevision string,
-	commitMessage *CommitMessage, changes []*Change) (*PushResult, *http.Response, error) {
+	commitMessage *CommitMessage, changes []*Change) (result *PushResult, statusCode int, err error) {
 	return c.content.push(ctx, projectName, repoName, baseRevision, commitMessage, changes)
 }
 

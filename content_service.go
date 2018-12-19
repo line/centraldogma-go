@@ -153,7 +153,7 @@ func (c *Change) UnmarshalJSON(b []byte) error {
 }
 
 func (con *contentService) listFiles(ctx context.Context,
-	projectName, repoName, revision, pathPattern string) ([]*Entry, *http.Response, error) {
+	projectName, repoName, revision, pathPattern string) ([]*Entry, int, error) {
 	if len(pathPattern) != 0 && !strings.HasPrefix(pathPattern, "/") {
 		// Normalize the pathPattern when it does not start with "/" so that the pathPattern fits into the url.
 		pathPattern = "/**/" + pathPattern
@@ -168,15 +168,15 @@ func (con *contentService) listFiles(ctx context.Context,
 	}
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var entries []*Entry
 	res, err := con.client.do(ctx, req, &entries)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return entries, res, nil
+	return entries, res.StatusCode, nil
 }
 
 func encodeValues(v *url.Values) string {
@@ -187,9 +187,9 @@ func encodeValues(v *url.Values) string {
 }
 
 func (con *contentService) getFile(
-	ctx context.Context, projectName, repoName, revision string, query *Query) (*Entry, *http.Response, error) {
+	ctx context.Context, projectName, repoName, revision string, query *Query) (*Entry, int, error) {
 	if query == nil {
-		return nil, nil, errors.New("query should not be nil")
+		return nil, UnknownHttpStatusCode, errors.New("query should not be nil")
 	}
 
 	path := query.Path
@@ -200,23 +200,23 @@ func (con *contentService) getFile(
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, path)
 	v := &url.Values{}
 	if err := getFileURLValues(v, revision, path, query); err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	u += encodeValues(v)
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	entry := new(Entry)
 	res, err := con.client.do(ctx, req, entry)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
 
-	return entry, res, nil
+	return entry, res.StatusCode, nil
 }
 
 // getFileURLValues currently only supports JSON path.
@@ -245,7 +245,7 @@ func setJSONPaths(v *url.Values, path string, jsonPaths []string) error {
 }
 
 func (con *contentService) getFiles(ctx context.Context,
-	projectName, repoName, revision, pathPattern string) ([]*Entry, *http.Response, error) {
+	projectName, repoName, revision, pathPattern string) ([]*Entry, int, error) {
 	if len(pathPattern) != 0 && !strings.HasPrefix(pathPattern, "/") {
 		// Normalize the pathPattern when it does not start with "/" so that the pathPattern fits into the url.
 		pathPattern = "/**/" + pathPattern
@@ -260,19 +260,19 @@ func (con *contentService) getFiles(ctx context.Context,
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var entries []*Entry
 	res, err := con.client.do(ctx, req, &entries)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return entries, res, nil
+	return entries, res.StatusCode, nil
 }
 
 func (con *contentService) getHistory(ctx context.Context,
-	projectName, repoName, from, to, pathPattern string, maxCommits int) ([]*Commit, *http.Response, error) {
+	projectName, repoName, from, to, pathPattern string, maxCommits int) ([]*Commit, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/commits/%v", defaultPathPrefix, projectName, repoName, from)
 
 	v := &url.Values{}
@@ -289,26 +289,26 @@ func (con *contentService) getHistory(ctx context.Context,
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var commits []*Commit
 	res, err := con.client.do(ctx, req, &commits)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return commits, res, nil
+	return commits, res.StatusCode, nil
 }
 
 func (con *contentService) getDiff(ctx context.Context,
-	projectName, repoName, from, to string, query *Query) (*Change, *http.Response, error) {
+	projectName, repoName, from, to string, query *Query) (*Change, int, error) {
 	if query == nil {
-		return nil, nil, errors.New("query should not be nil")
+		return nil, UnknownHttpStatusCode, errors.New("query should not be nil")
 	}
 
 	path := query.Path
 	if len(path) == 0 {
-		return nil, nil, errors.New("the path should not be empty")
+		return nil, UnknownHttpStatusCode, errors.New("the path should not be empty")
 	}
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -319,7 +319,7 @@ func (con *contentService) getDiff(ctx context.Context,
 	v.Set("path", path)
 	if query != nil && query.Type == JSONPath {
 		if err := setJSONPaths(v, path, query.Expressions); err != nil {
-			return nil, nil, err
+			return nil, UnknownHttpStatusCode, err
 		}
 	}
 	setFromTo(v, from, to)
@@ -327,16 +327,16 @@ func (con *contentService) getDiff(ctx context.Context,
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	change := new(Change)
 	res, err := con.client.do(ctx, req, change)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
 
-	return change, res, nil
+	return change, res.StatusCode, nil
 }
 
 func setFromTo(v *url.Values, from, to string) {
@@ -350,7 +350,7 @@ func setFromTo(v *url.Values, from, to string) {
 }
 
 func (con *contentService) getDiffs(ctx context.Context,
-	projectName, repoName, from, to, pathPattern string) ([]*Change, *http.Response, error) {
+	projectName, repoName, from, to, pathPattern string) ([]*Change, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/compare", defaultPathPrefix, projectName, repoName)
 	v := &url.Values{}
 
@@ -363,15 +363,15 @@ func (con *contentService) getDiffs(ctx context.Context,
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var changes []*Change
 	res, err := con.client.do(ctx, req, &changes)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return changes, res, nil
+	return changes, res.StatusCode, nil
 }
 
 type push struct {
@@ -380,14 +380,14 @@ type push struct {
 }
 
 func (con *contentService) push(ctx context.Context, projectName, repoName, baseRevision string,
-	commitMessage *CommitMessage, changes []*Change) (*PushResult, *http.Response, error) {
+	commitMessage *CommitMessage, changes []*Change) (*PushResult, int, error) {
 	if len(commitMessage.Summary) == 0 {
-		return nil, nil, fmt.Errorf(
+		return nil, UnknownHttpStatusCode, fmt.Errorf(
 			"summary of commitMessage cannot be empty. commitMessage: %+v", commitMessage)
 	}
 
 	if len(changes) == 0 {
-		return nil, nil, errors.New("no changes to commit")
+		return nil, UnknownHttpStatusCode, errors.New("no changes to commit")
 	}
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents", defaultPathPrefix, projectName, repoName)
@@ -400,13 +400,13 @@ func (con *contentService) push(ctx context.Context, projectName, repoName, base
 
 	req, err := con.client.newRequest(http.MethodPost, u, body)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	pushResult := new(PushResult)
 	res, err := con.client.do(ctx, req, pushResult)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return pushResult, res, nil
+	return pushResult, res.StatusCode, nil
 }

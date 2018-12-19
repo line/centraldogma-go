@@ -14,4 +14,6 @@ var (
 
 const (
 	DefaultChannelBuffer = 128
+
+	UnknownHttpStatusCode = 0
 )

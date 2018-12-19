@@ -31,105 +31,101 @@ type Repository struct {
 	CreatedAt    string  `json:"createdAt,omitempty"`
 }
 
-func (r *repositoryService) create(ctx context.Context, projectName, repoName string) (*Repository,
-	*http.Response, error) {
+func (r *repositoryService) create(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos", defaultPathPrefix, projectName)
 
 	req, err := r.client.newRequest(http.MethodPost, u, &Repository{Name: repoName})
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	repo := new(Repository)
 	res, err := r.client.do(ctx, req, repo)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
 
-	return repo, res, nil
+	return repo, res.StatusCode, nil
 }
 
-func (r *repositoryService) remove(ctx context.Context, projectName, repoName string) (*http.Response, error) {
+func (r *repositoryService) remove(ctx context.Context, projectName, repoName string) (int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v", defaultPathPrefix, projectName, repoName)
 
 	req, err := r.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
-		return nil, err
+		return UnknownHttpStatusCode, err
 	}
 
 	res, err := r.client.do(ctx, req, nil)
 	if err != nil {
-		return res, err
+		return res.StatusCode, err
 	}
-	return res, nil
+	return res.StatusCode, nil
 }
 
-func (r *repositoryService) unremove(ctx context.Context, projectName, repoName string) (*Repository,
-	*http.Response, error) {
+func (r *repositoryService) unremove(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v", defaultPathPrefix, projectName, repoName)
 
 	req, err := r.client.newRequest(http.MethodPatch, u, `[{"op":"replace", "path":"/status", "value":"active"}]`)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	repo := new(Repository)
 	res, err := r.client.do(ctx, req, repo)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return repo, res, nil
+	return repo, res.StatusCode, nil
 }
 
-func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Repository,
-	*http.Response, error) {
+func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Repository, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos", defaultPathPrefix, projectName)
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var repos []*Repository
 	res, err := r.client.do(ctx, req, &repos)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return repos, res, nil
+	return repos, res.StatusCode, nil
 }
 
-func (r *repositoryService) listRemoved(ctx context.Context, projectName string) ([]*Repository,
-	*http.Response, error) {
+func (r *repositoryService) listRemoved(ctx context.Context, projectName string) ([]*Repository, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos?status=removed", defaultPathPrefix, projectName)
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var repos []*Repository
 	res, err := r.client.do(ctx, req, &repos)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return repos, res, nil
+	return repos, res.StatusCode, nil
 }
 
 func (r *repositoryService) normalizeRevision(
-	ctx context.Context, projectName, repoName, revision string) (int, *http.Response, error) {
+	ctx context.Context, projectName, repoName, revision string) (int, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/revision/%v", defaultPathPrefix, projectName, repoName, revision)
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return -1, nil, err
+		return -1, UnknownHttpStatusCode, err
 	}
 
 	rev := new(rev)
 	res, err := r.client.do(ctx, req, rev)
 	if err != nil {
-		return -1, nil, err
+		return -1, res.StatusCode, err
 	}
-	return rev.Rev, res, nil
+	return rev.Rev, res.StatusCode, nil
 }
 
 type rev struct {
