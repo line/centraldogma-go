@@ -43,8 +43,8 @@ func TestCreateRepository(t *testing.T) {
 		fmt.Fprint(w, `{"name":"bar", "creator":{"name":"minux", "email":"minux@m.x"}, "headRevision": 2}`)
 	})
 
-	repo, res, _ := c.CreateRepository(context.Background(), "foo", "bar")
-	testStatus(t, res, 201)
+	repo, httpStatusCode, _ := c.CreateRepository(context.Background(), "foo", "bar")
+	testStatusCode(t, httpStatusCode, 201)
 
 	want := &Repository{Name: "bar", Creator: &Author{Name: "minux", Email: "minux@m.x"}, HeadRevision: 2}
 	if !reflect.DeepEqual(repo, want) {
@@ -61,8 +61,8 @@ func TestRemoveRepository(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	res, _ := c.RemoveRepository(context.Background(), "foo", "bar")
-	testStatus(t, res, 204)
+	httpStatusCode, _ := c.RemoveRepository(context.Background(), "foo", "bar")
+	testStatusCode(t, httpStatusCode, 204)
 }
 
 func TestUnremoveRepository(t *testing.T) {

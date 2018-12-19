@@ -34,82 +34,82 @@ type Author struct {
 	Email string `json:"email,omitempty"`
 }
 
-func (p *projectService) create(ctx context.Context, name string) (*Project, *http.Response, error) {
+func (p *projectService) create(ctx context.Context, name string) (*Project, int, error) {
 	u := defaultPathPrefix + "projects"
 
 	req, err := p.client.newRequest(http.MethodPost, u, &Project{Name: name})
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	project := new(Project)
 	res, err := p.client.do(ctx, req, project)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return project, res, nil
+	return project, res.StatusCode, nil
 }
 
-func (p *projectService) remove(ctx context.Context, name string) (*http.Response, error) {
+func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 	u := defaultPathPrefix + "projects/" + name
 
 	req, err := p.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
-		return nil, err
+		return UnknownHttpStatusCode, err
 	}
 
 	res, err := p.client.do(ctx, req, nil)
 	if err != nil {
-		return res, err
+		return res.StatusCode, err
 	}
-	return res, nil
+	return res.StatusCode, nil
 }
 
-func (p *projectService) unremove(ctx context.Context, name string) (*Project, *http.Response, error) {
+func (p *projectService) unremove(ctx context.Context, name string) (*Project, int, error) {
 	u := defaultPathPrefix + "projects/" + name
 
 	req, err := p.client.newRequest(http.MethodPatch, u, `[{"op":"replace", "path":"/status", "value":"active"}]`)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	project := new(Project)
 	res, err := p.client.do(ctx, req, project)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return project, res, nil
+	return project, res.StatusCode, nil
 }
 
-func (p *projectService) list(ctx context.Context) ([]*Project, *http.Response, error) {
+func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
 	u := defaultPathPrefix + "projects"
 
 	req, err := p.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var projects []*Project
 	res, err := p.client.do(ctx, req, &projects)
 
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return projects, res, nil
+	return projects, res.StatusCode, nil
 }
 
-func (p *projectService) listRemoved(ctx context.Context) ([]*Project, *http.Response, error) {
+func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, error) {
 	u := defaultPathPrefix + "projects?status=removed"
 
 	req, err := p.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, UnknownHttpStatusCode, err
 	}
 
 	var projects []*Project
 	res, err := p.client.do(ctx, req, &projects)
 	if err != nil {
-		return nil, res, err
+		return nil, res.StatusCode, err
 	}
-	return projects, res, nil
+	return projects, res.StatusCode, nil
 }
