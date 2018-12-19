@@ -133,14 +133,14 @@ func getRemoteFileEntry(c *cli.Context,
 	}
 
 	query := createQuery(repoPath, jsonPaths)
-	entry, res, err := client.GetFile(context.Background(), projName, repoName, revision, query)
+	entry, httpStatusCode, err := client.GetFile(context.Background(), projName, repoName, revision, query)
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get the file: /%s/%s%s revision: %q (status: %s)",
-			projName, repoName, repoPath, revision, res.Status)
+	if httpStatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get the file: /%s/%s%s revision: %q (status: %d)",
+			projName, repoName, repoPath, revision, httpStatusCode)
 	}
 
 	return entry, nil

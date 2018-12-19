@@ -33,13 +33,13 @@ func (nr *normalizeRevisionCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	normalized, res, err := client.NormalizeRevision(context.Background(), repo.projName, repo.repoName, repo.revision)
+	normalized, httpStatusCode, err := client.NormalizeRevision(context.Background(), repo.projName, repo.repoName, repo.revision)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to normalize /%s/%s revision: %q (status: %s)",
-			repo.projName, repo.repoName, repo.revision, res.Status)
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to normalize /%s/%s revision: %q (status: %d)",
+			repo.projName, repo.repoName, repo.revision, httpStatusCode)
 	}
 
 	fmt.Printf("normalized revision: %v\n", normalized)
