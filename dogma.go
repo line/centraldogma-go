@@ -210,12 +210,12 @@ type errorMessage struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (*http.Response, error) {
+func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (int, error) {
 	req = req.WithContext(ctx)
 
 	res, err := c.client.Do(req)
 	if err != nil {
-		return &http.Response{StatusCode: -1}, err
+		return UnknownHttpStatusCode, err
 	}
 	defer func() {
 		// drain up 512 bytes and close the body to reuse connection
@@ -237,7 +237,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 			err = fmt.Errorf("%s (status: %v)", errorMessage.Message, res.StatusCode)
 		}
 
-		return res, err
+		return res.StatusCode, err
 	}
 
 	if resContent != nil {
@@ -246,7 +246,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 			err = nil
 		}
 	}
-	return res, err
+	return res.StatusCode, err
 }
 
 // CreateProject creates a project.

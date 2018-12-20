@@ -43,11 +43,11 @@ func (p *projectService) create(ctx context.Context, name string) (*Project, int
 	}
 
 	project := new(Project)
-	res, err := p.client.do(ctx, req, project)
+	statusCode, err := p.client.do(ctx, req, project)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return project, res.StatusCode, nil
+	return project, statusCode, nil
 }
 
 func (p *projectService) remove(ctx context.Context, name string) (int, error) {
@@ -58,11 +58,11 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 		return UnknownHttpStatusCode, err
 	}
 
-	res, err := p.client.do(ctx, req, nil)
+	statusCode, err := p.client.do(ctx, req, nil)
 	if err != nil {
-		return res.StatusCode, err
+		return statusCode, err
 	}
-	return res.StatusCode, nil
+	return statusCode, nil
 }
 
 func (p *projectService) unremove(ctx context.Context, name string) (*Project, int, error) {
@@ -74,11 +74,11 @@ func (p *projectService) unremove(ctx context.Context, name string) (*Project, i
 	}
 
 	project := new(Project)
-	res, err := p.client.do(ctx, req, project)
+	statusCode, err := p.client.do(ctx, req, project)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return project, res.StatusCode, nil
+	return project, statusCode, nil
 }
 
 func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
@@ -90,12 +90,11 @@ func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
 	}
 
 	var projects []*Project
-	res, err := p.client.do(ctx, req, &projects)
-
+	statusCode, err := p.client.do(ctx, req, &projects)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return projects, res.StatusCode, nil
+	return projects, statusCode, nil
 }
 
 func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, error) {
@@ -107,9 +106,9 @@ func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, erro
 	}
 
 	var projects []*Project
-	res, err := p.client.do(ctx, req, &projects)
+	statusCode, err := p.client.do(ctx, req, &projects)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return projects, res.StatusCode, nil
+	return projects, statusCode, nil
 }

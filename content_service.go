@@ -172,11 +172,11 @@ func (con *contentService) listFiles(ctx context.Context,
 	}
 
 	var entries []*Entry
-	res, err := con.client.do(ctx, req, &entries)
+	statusCode, err := con.client.do(ctx, req, &entries)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return entries, res.StatusCode, nil
+	return entries, statusCode, nil
 }
 
 func encodeValues(v *url.Values) string {
@@ -211,12 +211,12 @@ func (con *contentService) getFile(
 	}
 
 	entry := new(Entry)
-	res, err := con.client.do(ctx, req, entry)
+	statusCode, err := con.client.do(ctx, req, entry)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
 
-	return entry, res.StatusCode, nil
+	return entry, statusCode, nil
 }
 
 // getFileURLValues currently only supports JSON path.
@@ -264,11 +264,11 @@ func (con *contentService) getFiles(ctx context.Context,
 	}
 
 	var entries []*Entry
-	res, err := con.client.do(ctx, req, &entries)
+	statusCode, err := con.client.do(ctx, req, &entries)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return entries, res.StatusCode, nil
+	return entries, statusCode, nil
 }
 
 func (con *contentService) getHistory(ctx context.Context,
@@ -293,11 +293,11 @@ func (con *contentService) getHistory(ctx context.Context,
 	}
 
 	var commits []*Commit
-	res, err := con.client.do(ctx, req, &commits)
+	statusCode, err := con.client.do(ctx, req, &commits)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return commits, res.StatusCode, nil
+	return commits, statusCode, nil
 }
 
 func (con *contentService) getDiff(ctx context.Context,
@@ -331,12 +331,12 @@ func (con *contentService) getDiff(ctx context.Context,
 	}
 
 	change := new(Change)
-	res, err := con.client.do(ctx, req, change)
+	statusCode, err := con.client.do(ctx, req, change)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
 
-	return change, res.StatusCode, nil
+	return change, statusCode, nil
 }
 
 func setFromTo(v *url.Values, from, to string) {
@@ -367,11 +367,11 @@ func (con *contentService) getDiffs(ctx context.Context,
 	}
 
 	var changes []*Change
-	res, err := con.client.do(ctx, req, &changes)
+	statusCode, err := con.client.do(ctx, req, &changes)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return changes, res.StatusCode, nil
+	return changes, statusCode, nil
 }
 
 type push struct {
@@ -404,9 +404,9 @@ func (con *contentService) push(ctx context.Context, projectName, repoName, base
 	}
 
 	pushResult := new(PushResult)
-	res, err := con.client.do(ctx, req, pushResult)
+	statusCode, err := con.client.do(ctx, req, pushResult)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return pushResult, res.StatusCode, nil
+	return pushResult, statusCode, nil
 }

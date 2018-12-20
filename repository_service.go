@@ -40,12 +40,12 @@ func (r *repositoryService) create(ctx context.Context, projectName, repoName st
 	}
 
 	repo := new(Repository)
-	res, err := r.client.do(ctx, req, repo)
+	statusCode, err := r.client.do(ctx, req, repo)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
 
-	return repo, res.StatusCode, nil
+	return repo, statusCode, nil
 }
 
 func (r *repositoryService) remove(ctx context.Context, projectName, repoName string) (int, error) {
@@ -56,11 +56,11 @@ func (r *repositoryService) remove(ctx context.Context, projectName, repoName st
 		return UnknownHttpStatusCode, err
 	}
 
-	res, err := r.client.do(ctx, req, nil)
+	statusCode, err := r.client.do(ctx, req, nil)
 	if err != nil {
-		return res.StatusCode, err
+		return statusCode, err
 	}
-	return res.StatusCode, nil
+	return statusCode, nil
 }
 
 func (r *repositoryService) unremove(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
@@ -72,11 +72,11 @@ func (r *repositoryService) unremove(ctx context.Context, projectName, repoName 
 	}
 
 	repo := new(Repository)
-	res, err := r.client.do(ctx, req, repo)
+	statusCode, err := r.client.do(ctx, req, repo)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return repo, res.StatusCode, nil
+	return repo, statusCode, nil
 }
 
 func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Repository, int, error) {
@@ -88,11 +88,11 @@ func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Re
 	}
 
 	var repos []*Repository
-	res, err := r.client.do(ctx, req, &repos)
+	statusCode, err := r.client.do(ctx, req, &repos)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return repos, res.StatusCode, nil
+	return repos, statusCode, nil
 }
 
 func (r *repositoryService) listRemoved(ctx context.Context, projectName string) ([]*Repository, int, error) {
@@ -104,11 +104,11 @@ func (r *repositoryService) listRemoved(ctx context.Context, projectName string)
 	}
 
 	var repos []*Repository
-	res, err := r.client.do(ctx, req, &repos)
+	statusCode, err := r.client.do(ctx, req, &repos)
 	if err != nil {
-		return nil, res.StatusCode, err
+		return nil, statusCode, err
 	}
-	return repos, res.StatusCode, nil
+	return repos, statusCode, nil
 }
 
 func (r *repositoryService) normalizeRevision(
@@ -121,11 +121,11 @@ func (r *repositoryService) normalizeRevision(
 	}
 
 	rev := new(rev)
-	res, err := r.client.do(ctx, req, rev)
+	statusCode, err := r.client.do(ctx, req, rev)
 	if err != nil {
-		return -1, res.StatusCode, err
+		return -1, statusCode, err
 	}
-	return rev.Rev, res.StatusCode, nil
+	return rev.Rev, statusCode, nil
 }
 
 type rev struct {
