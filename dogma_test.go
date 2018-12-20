@@ -99,8 +99,8 @@ func TestNewClient(t *testing.T) {
 	c, _ := NewClient(server.URL, "foo", "bar")
 	req, _ := c.newRequest(http.MethodGet, "/test", nil)
 
-	statusCode, _ := c.do(context.Background(), req, nil)
-	testStatusCode(t, statusCode, 200)
+	httpStatusCode, _ := c.do(context.Background(), req, nil)
+	testStatusCode(t, httpStatusCode, 200)
 }
 
 func TestNewClientWithHTTPClient(t *testing.T) {

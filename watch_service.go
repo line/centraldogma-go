@@ -111,15 +111,15 @@ func (ws *watchService) watchRequest(
 	defer cancel()
 
 	watchResult := new(WatchResult)
-	statusCode, err := ws.client.do(reqCtx, req, watchResult)
+	httpStatusCode, err := ws.client.do(reqCtx, req, watchResult)
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = fmt.Errorf("watch request timeout: %.3f second(s)", timeout.Seconds())
 		}
-		return &WatchResult{HttpStatusCode: statusCode, Err: err}
+		return &WatchResult{HttpStatusCode: httpStatusCode, Err: err}
 	}
 
-	watchResult.HttpStatusCode = statusCode
+	watchResult.HttpStatusCode = httpStatusCode
 	return watchResult
 }
 
