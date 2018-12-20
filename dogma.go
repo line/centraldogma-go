@@ -215,7 +215,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 
 	res, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return &http.Response{StatusCode: -1}, err
 	}
 	defer func() {
 		// drain up 512 bytes and close the body to reuse connection
