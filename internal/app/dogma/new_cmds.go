@@ -37,12 +37,12 @@ func (np *newProjectCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	_, res, err := client.CreateProject(context.Background(), np.name)
+	_, httpStatusCode, err := client.CreateProject(context.Background(), np.name)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create %s (status: %s)", np.name, res.Status)
+	if httpStatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create %s (status: %d)", np.name, httpStatusCode)
 	}
 
 	fmt.Printf("Created: /%s\n", np.name)
@@ -63,12 +63,12 @@ func (nr *newRepositoryCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	_, res, err := client.CreateRepository(context.Background(), nr.projName, nr.repoName)
+	_, httpStatusCode, err := client.CreateRepository(context.Background(), nr.projName, nr.repoName)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create %s (status: %s)", nr.repoName, res.Status)
+	if httpStatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create %s (status: %d)", nr.repoName, httpStatusCode)
 	}
 	fmt.Printf("Created: /%s/%s\n", nr.projName, nr.repoName)
 	return nil
@@ -122,15 +122,15 @@ func (pf *putFileCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	_, res, err := client.Push(context.Background(),
+	_, httpStatusCode, err := client.Push(context.Background(),
 		repo.projName, repo.repoName, repo.revision, commitMessage, []*centraldogma.Change{change})
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to put %s to /%s/%s%s revision: %q (status: %s)",
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to put %s to /%s/%s%s revision: %q (status: %d)",
 			pf.localFilePath, repo.projName, repo.repoName,
-			repo.path, repo.revision, res.Status)
+			repo.path, repo.revision, httpStatusCode)
 	}
 	fmt.Printf("Put: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
 	return nil

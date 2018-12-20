@@ -35,14 +35,14 @@ func (d *diffCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	changes, res, err := client.GetDiffs(
+	changes, httpStatusCode, err := client.GetDiffs(
 		context.Background(), repo.projName, repo.repoName, repo.from, repo.to, repo.path)
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get the diff of /%s/%s%s from: %q, to: %q (status: %s)",
-			repo.projName, repo.repoName, repo.path, repo.from, repo.to, res.Status)
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the diff of /%s/%s%s from: %q, to: %q (status: %d)",
+			repo.projName, repo.repoName, repo.path, repo.from, repo.to, httpStatusCode)
 	}
 
 	for _, change := range changes {

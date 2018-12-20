@@ -53,7 +53,7 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 
 	cleanupDone := make(chan bool)
 	listener := func(watchResult dogma.WatchResult) {
-		revision := watchResult.Commit.Revision
+		revision := watchResult.Revision
 		if revision > normalizedRevision {
 			fmt.Printf("Watcher noticed updated file: %s/%s%s, rev=%v\n",
 				repo.projName, repo.repoName, repo.path, revision)

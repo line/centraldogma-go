@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -35,12 +34,12 @@ func (lsp *lsProjectCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	projects, res, err := client.ListProjects(context.Background())
+	projects, httpStatusCode, err := client.ListProjects(context.Background())
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		return errors.New("failed to get the list of projects")
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the list of projects. (status: %d)", httpStatusCode)
 	}
 	printWithStyle(projects, lsp.style)
 	return nil
@@ -60,13 +59,14 @@ func (lsr *lsRepositoryCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	repos, res, err := client.ListRepositories(context.Background(), lsr.projName)
+	repos, httpStatusCode, err := client.ListRepositories(context.Background(), lsr.projName)
 	if err != nil {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get the list of repositories in %s", lsr.projName)
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the list of repositories in %s. (status: %d)",
+			lsr.projName, httpStatusCode)
 	}
 
 	printWithStyle(repos, lsr.style)
@@ -86,16 +86,15 @@ func (lsp *lsPathCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	repos, res, err := client.ListFiles(context.Background(), lsp.repo.projName, lsp.repo.repoName,
+	repos, httpStatusCode, err := client.ListFiles(context.Background(), lsp.repo.projName, lsp.repo.repoName,
 		lsp.repo.revision, lsp.repo.path)
 	if err != nil {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get the list of files in the /%s/%s%s revision: %q (status: %s)",
-			lsp.repo.projName, lsp.repo.repoName, lsp.repo.path, lsp.repo.revision,
-			res.Status)
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the list of files in the /%s/%s%s revision: %q (status: %d)",
+			lsp.repo.projName, lsp.repo.repoName, lsp.repo.path, lsp.repo.revision, httpStatusCode)
 	}
 
 	printWithStyle(repos, lsp.style)

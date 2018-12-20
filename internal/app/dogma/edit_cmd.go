@@ -54,14 +54,14 @@ func (ef *editFileCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	_, res, err := client.Push(context.Background(),
+	_, httpStatusCode, err := client.Push(context.Background(),
 		repo.projName, repo.repoName, repo.revision, commitMessage, []*centraldogma.Change{change})
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to edit the file: /%s/%s%s revision: %q (status: %s)",
-			repo.projName, repo.repoName, repo.path, repo.revision, res.Status)
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to edit the file: /%s/%s%s revision: %q (status: %d)",
+			repo.projName, repo.repoName, repo.path, repo.revision, httpStatusCode)
 	}
 
 	fmt.Printf("Edited: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
