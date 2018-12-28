@@ -26,6 +26,8 @@ import (
 	"time"
 )
 
+const timeoutBuffer = 5 * time.Second
+
 type watchService service
 
 // WatchResult represents a result from watch operation.
@@ -107,7 +109,7 @@ func (ws *watchService) watchRequest(
 	}
 
 	// create new request context with timeout
-	reqCtx, cancel := context.WithTimeout(ctx, timeout+time.Second) // wait more than server
+	reqCtx, cancel := context.WithTimeout(ctx, timeout+timeoutBuffer) // wait more than server
 	defer cancel()
 
 	watchResult := new(WatchResult)
