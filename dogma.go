@@ -25,7 +25,7 @@ Central Dogma HTTP APIs. For example:
 
 	username := "foo"
 	password := "bar"
-	client, err := centraldogma.NewClient("http://localhost:36462", username, password)
+	client, err := centraldogma.NewClientWithToken("https://localhost:443", "myToken", nil)
 
 	projects, res, err := client.ListProjects(context.Background())
 
@@ -37,25 +37,29 @@ package centraldogma
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/http2"
 	"golang.org/x/oauth2"
 )
 
 var log = logrus.New()
 
 const (
-	defaultScheme     = "http"
+	defaultScheme     = "https"
 	defaultHostName   = "localhost"
-	defaultBaseURL    = defaultScheme + "://" + defaultHostName + ":36462/"
+	defaultBaseURL    = defaultScheme + "://" + defaultHostName + "/"
 	defaultPathPrefix = "api/v1/"
 
 	pathSecurityEnabled = "security_enabled"
@@ -79,46 +83,60 @@ type service struct {
 	client *Client
 }
 
-// NewClient returns a Central Dogma client with the specified baseURL, username and password.
-func NewClient(baseURL, username, password string) (*Client, error) {
+// NewClientWithToken returns a Central Dogma client which communicates the server at baseURL, using the specified
+// token and transport. If transport is nil, http2.Transport is used by default.
+func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Client, error) {
 	normalizedURL, err := normalizeURL(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
+	if len(token) == 0 {
+		return nil, errors.New("token should not be empty")
+	}
+
 	config := oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: normalizedURL.String() + pathLogin}}
-	token, err := config.PasswordCredentialsToken(context.Background(), username, password)
+	tokenSource := config.TokenSource(context.Background(), &oauth2.Token{AccessToken: token})
+	client, err := newOauth2HTTP2Client(normalizedURL.String(), tokenSource, transport)
 	if err != nil {
 		return nil, err
 	}
 
-	return newClientWithHTTPClient(normalizedURL.String(), config.Client(context.Background(), token))
+	return newClientWithHTTPClient(normalizedURL, client)
 }
 
-// NewClientWithToken returns a Central Dogma client with the specified baseURL and token.
-func NewClientWithToken(baseURL, token string) (*Client, error) {
-	normalizedURL, err := normalizeURL(baseURL)
-	if err != nil {
-		return nil, err
+func newOauth2HTTP2Client(normalizedURL string,
+	tokenSource oauth2.TokenSource, transport http.RoundTripper) (*http.Client, error) {
+	if transport == nil {
+		transport = defaultHTTP2Transport(normalizedURL)
 	}
 
-	config := oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: normalizedURL.String() + pathLogin}}
-	oauthToken := &oauth2.Token{AccessToken: token}
+	return &http.Client{
+		Transport: &oauth2.Transport{
+			Base:   transport,
+			Source: oauth2.ReuseTokenSource(nil, tokenSource),
+		},
+	}, nil
+}
 
-	return newClientWithHTTPClient(normalizedURL.String(), config.Client(context.Background(), oauthToken))
+func defaultHTTP2Transport(normalizedURL string) *http2.Transport {
+	if strings.HasPrefix(normalizedURL, "http://") { // H2C
+		return &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+		}
+	}
+	return &http2.Transport{} // H2
 }
 
 // newClientWithHTTPClient returns a Central Dogma client with the specified baseURL and client.
 // The client should perform the authentication.
-func newClientWithHTTPClient(baseURL string, client *http.Client) (*Client, error) {
-	normalizedURL, err := normalizeURL(baseURL)
-	if err != nil {
-		return nil, err
-	}
-
+func newClientWithHTTPClient(baseURL *url.URL, client *http.Client) (*Client, error) {
 	c := &Client{
 		client:  client,
-		baseURL: normalizedURL,
+		baseURL: baseURL,
 	}
 	service := &service{client: c}
 
@@ -212,7 +230,6 @@ type errorMessage struct {
 
 func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (int, error) {
 	req = req.WithContext(ctx)
-
 	res, err := c.client.Do(req)
 	if err != nil {
 		return UnknownHttpStatusCode, err
