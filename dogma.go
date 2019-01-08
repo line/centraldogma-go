@@ -91,13 +91,7 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 		return nil, err
 	}
 
-	if len(token) == 0 {
-		return nil, errors.New("token should not be empty")
-	}
-
-	config := oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: normalizedURL.String() + pathLogin}}
-	tokenSource := config.TokenSource(context.Background(), &oauth2.Token{AccessToken: token})
-	client, err := newOauth2HTTP2Client(normalizedURL.String(), tokenSource, transport)
+	client, err := newOauth2HTTP2Client(normalizedURL.String(), token, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -105,30 +99,70 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 	return newClientWithHTTPClient(normalizedURL, client)
 }
 
-func newOauth2HTTP2Client(normalizedURL string,
-	tokenSource oauth2.TokenSource, transport http.RoundTripper) (*http.Client, error) {
+// DefaultOauth2Transport returns an oauth2.Transport which internally uses the specified transport and attaches
+// the specified token to every request using the authorization header. If the transport is a type of oauth2.Transport,
+// it will throw an error.
+func DefaultOauth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
+	if len(token) == 0 {
+		return nil, errors.New("token should not be empty")
+	}
 	if transport == nil {
-		transport = defaultHTTP2Transport(normalizedURL)
+		return nil, errors.New("transport should not be nil")
 	}
 
-	return &http.Client{
-		Transport: &oauth2.Transport{
-			Base:   transport,
-			Source: oauth2.ReuseTokenSource(nil, tokenSource),
-		},
+	_, ok := transport.(*oauth2.Transport)
+	if ok {
+		return nil, errors.New("transport cannot be oauth2.Transport")
+	}
+
+	normalizedURL, err := normalizeURL(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	config := oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: normalizedURL.String() + pathLogin}}
+	tokenSource := config.TokenSource(context.Background(), &oauth2.Token{AccessToken: token})
+	return &oauth2.Transport{
+		Base:   transport,
+		Source: oauth2.ReuseTokenSource(nil, tokenSource),
 	}, nil
 }
 
-func defaultHTTP2Transport(normalizedURL string) *http2.Transport {
-	if strings.HasPrefix(normalizedURL, "http://") { // H2C
+// DefaultHTTP2Transport returns a http2.Transport which could be used on cleartext or encrypted connection depending
+// on the scheme of the baseURL.
+func DefaultHTTP2Transport(baseURL string) (*http2.Transport, error) {
+	normalizedURL, err := normalizeURL(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.HasPrefix(normalizedURL.String(), "http://") { // H2C
 		return &http2.Transport{
 			AllowHTTP: true,
 			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
 				return net.Dial(network, addr)
 			},
+		}, nil
+	}
+	return &http2.Transport{}, nil // H2
+}
+
+func newOauth2HTTP2Client(normalizedURL, token string, transport http.RoundTripper) (c *http.Client, err error) {
+	if transport == nil {
+		transport, err = DefaultHTTP2Transport(normalizedURL)
+		if err != nil {
+			return nil, err
 		}
 	}
-	return &http2.Transport{} // H2
+
+	_, ok := transport.(*oauth2.Transport)
+	if !ok {
+		transport, err = DefaultOauth2Transport(normalizedURL, token, transport)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &http.Client{Transport: transport}, nil
 }
 
 // newClientWithHTTPClient returns a Central Dogma client with the specified baseURL and client.

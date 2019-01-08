@@ -19,6 +19,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +30,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
-const token = "fdbe78b0-1d0c-4978-bbb1-9bc7106dad36"
+const token = "appToken-fdbe78b0-1d0c-4978-bbb1-9bc7106dad36"
 
 // setup sets up a test HTTP/2 server along with a centraldogma.Client that is
 // configured to talk to that test server. Tests should register handlers on
@@ -86,8 +87,8 @@ func testHeader(t *testing.T, req *http.Request, header string, want string) {
 
 func testAuthorization(t *testing.T, req *http.Request) {
 	want := "Bearer " + token
-	if got := req.Header.Get("Authorization"); got != want {
-		t.Errorf("Authorization: %q, want %q", got, want)
+	if got := req.Header.Get("authorization"); got != want {
+		t.Errorf("authorization: %q, want %q", got, want)
 	}
 }
 
@@ -143,7 +144,7 @@ func TestDefaultHTTP2Transport(t *testing.T) {
 	normalizedH2C := "http://localhost/"
 	normalizedH2 := "https://localhost/"
 
-	h2cTransport := defaultHTTP2Transport(normalizedH2C)
+	h2cTransport, _ := DefaultHTTP2Transport(normalizedH2C)
 	if h2cTransport.AllowHTTP != true {
 		t.Errorf("h2cTransport.AllowHTTP is %t, want %t", h2cTransport.AllowHTTP, true)
 	}
@@ -151,7 +152,7 @@ func TestDefaultHTTP2Transport(t *testing.T) {
 		t.Errorf("h2cTransport.DialTLS is nil")
 	}
 
-	h2Transport := defaultHTTP2Transport(normalizedH2)
+	h2Transport, _ := DefaultHTTP2Transport(normalizedH2)
 	if h2Transport.AllowHTTP != false {
 		t.Errorf("h2Transport.AllowHTTP is %t, want %t", h2cTransport.AllowHTTP, false)
 	}
@@ -160,11 +161,31 @@ func TestDefaultHTTP2Transport(t *testing.T) {
 	}
 }
 
+func TestDefaultOauth2Transport(t *testing.T) {
+	baseURL := "https://localhost/"
+	http2Transport, _ := DefaultHTTP2Transport(baseURL);
+	oauth2Transport, _ := DefaultOauth2Transport(baseURL, "myToken", http2Transport)
+	if oauth2Transport.Base != http2Transport {
+		t.Errorf("oauth2Transport.Base is %+v, want %+v", oauth2Transport.Base, http2Transport)
+	}
+
+	token, _ := oauth2Transport.Source.Token()
+	if token.AccessToken != "myToken" {
+		t.Errorf("oauth2Transport.Source.Token() returned %s, want %s", token.AccessToken, "myToken")
+	}
+
+	// Error when DefaultOauth2Transport is called with oauth2.Transport
+	transport, err := DefaultOauth2Transport(baseURL, "myToken", oauth2Transport)
+	if err == nil {
+		t.Errorf("DefaultOauth2Transport returned %+v, want nil", transport)
+	}
+}
+
 type helloArmeria struct {
 	Hello string `json:"hello"`
 }
 
-func TestNewClientWithTokenH2(t *testing.T) {
+func TestNewClientWithToken_h2(t *testing.T) {
 	client, mux, teardown := setup()
 	defer teardown()
 
@@ -185,7 +206,7 @@ func TestNewClientWithTokenH2(t *testing.T) {
 	testString(t, hello.Hello, "Armeria", "hello")
 }
 
-func TestNewClientWithTokenH2C(t *testing.T) {
+func TestNewClientWithToken_h2c(t *testing.T) {
 	client, mux, teardown := setupH2C()
 	defer teardown()
 
@@ -211,7 +232,7 @@ func TestNewClientWithTokenH2C(t *testing.T) {
 	testString(t, hello.Hello, "Armeria", "hello")
 }
 
-func TestNewClientWithTokenH1C(t *testing.T) {
+func TestNewClientWithToken_h1c(t *testing.T) {
 	client, mux, teardown := setupH1C()
 	defer teardown()
 
@@ -246,5 +267,32 @@ func TestNewClientWithHTTPClient(t *testing.T) {
 
 	if client.client != myClient {
 		t.Errorf("newClientWithHTTPClient client is %v, want %v", client.client, myClient)
+	}
+}
+
+func TestNewClientWithHTTPClient1(t *testing.T) {
+	normalizedURL := "https://localhost/"
+
+	httpTransport := &http.Transport{}
+	// The httpTransport is wrapped with oauth2.Transport.
+	client, _ := newOauth2HTTP2Client(normalizedURL, "myToken", httpTransport)
+	oauth2Transport, _ := client.Transport.(*oauth2.Transport)
+	if oauth2Transport.Base != httpTransport {
+		t.Errorf("newOauth2HTTP2Client transport is %+v, want http.Transport", oauth2Transport.Base)
+	}
+
+	// If the transport is nil http2.Transport is used.
+	client, _ = newOauth2HTTP2Client(normalizedURL, "myToken", nil)
+	oauth2Transport, _ = client.Transport.(*oauth2.Transport)
+	_, ok := oauth2Transport.Base.(*http2.Transport)
+	if !ok {
+		t.Errorf("newOauth2HTTP2Client transport is %+v, want http2.Transport", client.Transport)
+	}
+
+	// If an oauth2Transport is used, it doesn't wrap and just return it.
+	client, _ = newOauth2HTTP2Client(normalizedURL, "myToken", oauth2Transport)
+	newOauth2Transport, _ := client.Transport.(*oauth2.Transport)
+	if oauth2Transport != newOauth2Transport {
+		t.Errorf("newOauth2HTTP2Client transport is %+v, want %+v", client.Transport, oauth2Transport)
 	}
 }
