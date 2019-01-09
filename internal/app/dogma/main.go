@@ -39,10 +39,6 @@ func main() {
 				"[hostname:port] or [http://hostname:port]",
 		},
 		cli.StringFlag{
-			Name:  "username, u",
-			Usage: "Specifies the username to log in as",
-		},
-		cli.StringFlag{
 			Name:  "token, t",
 			Usage: "Specifies an authorization token to access resources on the server",
 		},
@@ -56,16 +52,17 @@ func main() {
 	cli.CommandHelpTemplate = commandHelpTemplate
 
 	// You can use this arguments to test easily.
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "new", "projFoo"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "ls"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "new", "projFoo/repoA"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "ls", "projFoo"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "put",
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "ls"})
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "new",
+	//  "projFoo/repoA"})
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "ls", "projFoo"})
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "put",
 	//	"projFoo/repoA/samples/a.json", "a.json", "-m", "Add a.json"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "cat", "projFoo/repoA/samples/a.json"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "cat",
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "cat",
+	//  "projFoo/repoA/samples/a.json"})
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "cat",
 	//  "projFoo/repoA/samples/a.json", "--jsonpath", "$.a"})
-	//app.Run([]string{"dogma", "--connect", "localhost:36462", "watch",
+	//app.Run([]string{"dogma", "--connect", "https://localhost/", "--token", "appToken-myToken", "watch",
 	// "projFoo/repoA/samples/a.json", "--revision", "-1"})
 
 	app.Run(os.Args)
