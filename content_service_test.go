@@ -331,7 +331,5 @@ func TestGetTextFile(t *testing.T) {
 	want := &Entry{Path: "/b.txt", Type: Text, Content: EntryContent(content)}
 	if !reflect.DeepEqual(entry, want) {
 		t.Errorf("GetFile returned %+v, want %+v", entry, want)
-	} else {
-		t.Log(string(entry.Content))
 	}
 }

@@ -31,7 +31,7 @@ func TestCreateProject(t *testing.T) {
 
 	mux.HandleFunc("/api/v1/projects", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, http.MethodPost)
-		testHeader(t, r, "Authorization", "Bearer anonymous")
+		testAuthorization(t, r)
 
 		project := new(Project)
 		json.NewDecoder(r.Body).Decode(project)

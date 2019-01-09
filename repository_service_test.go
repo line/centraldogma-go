@@ -31,7 +31,7 @@ func TestCreateRepository(t *testing.T) {
 
 	mux.HandleFunc("/api/v1/projects/foo/repos", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, http.MethodPost)
-		testHeader(t, r, "Authorization", "Bearer anonymous")
+		testAuthorization(t, r)
 
 		repo := new(Repository)
 		json.NewDecoder(r.Body).Decode(repo)
