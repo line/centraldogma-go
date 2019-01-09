@@ -23,11 +23,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"syscall"
 
 	"github.com/urfave/cli"
 	"go.linecorp.com/centraldogma"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Command is the common interface implemented by all commands.
@@ -154,18 +152,12 @@ func newDogmaClient(c *cli.Context, baseURL string) (client *centraldogma.Client
 
 	if !enabled {
 		// Create a client with the anonymous token.
-		return centraldogma.NewClientWithToken(baseURL, "anonymous")
+		return centraldogma.NewClientWithToken(baseURL, "anonymous", nil)
 	}
 
 	token := c.Parent().String("token")
 	if len(token) != 0 {
-		if client, err = centraldogma.NewClientWithToken(baseURL, token); err != nil {
-			return nil, err
-		}
-	} else {
-		// Get username and password from netrc file or prompt.
-		username, password, err := usernameAndPassword(c)
-		if client, err = centraldogma.NewClient(baseURL, username, password); err != nil {
+		if client, err = centraldogma.NewClientWithToken(baseURL, token, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -183,64 +175,9 @@ func createQuery(repoPath string, jsonPaths []string) *centraldogma.Query {
 
 func checkIfSecurityEnabled(baseURL string) (bool, error) {
 	// Create a client with the anonymous token just to check the security is enabled.
-	client, err := centraldogma.NewClientWithToken(baseURL, "anonymous")
+	client, err := centraldogma.NewClientWithToken(baseURL, "anonymous", nil)
 	if err != nil {
 		return false, err
 	}
 	return client.SecurityEnabled()
-}
-
-func usernameAndPassword(c *cli.Context) (username string, password string, err error) {
-	username = c.Parent().String("login")
-	if len(username) != 0 {
-		if password, err = getPassword(); err != nil {
-			return "", "", err
-		}
-		return username, password, nil
-	}
-
-	machine := netrcInfo(c.Parent().String("connect"))
-	if machine != nil {
-		username = machine.Login
-		password = machine.Password
-		if len(username) == 0 || len(password) == 0 {
-			return "", "", fmt.Errorf("netrc file doesn't have enough information (username:%q)", username)
-		}
-		return username, password, nil
-	}
-
-	if username, err = getUsername(); err != nil {
-		return "", "", err
-	}
-	if password, err = getPassword(); err != nil {
-		return "", "", err
-	}
-	return username, password, nil
-}
-
-func getUsername() (string, error) {
-	fmt.Print("Enter username: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if !scanner.Scan() {
-		return "", errors.New("you must input username")
-	}
-	line := strings.TrimSpace(scanner.Text())
-	if len(line) == 0 {
-		return "", errors.New("you must input username")
-	}
-	return line, nil
-}
-
-func getPassword() (string, error) {
-	fmt.Print("Enter password: ")
-	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return "", err
-	}
-	fmt.Println()
-	password := string(bytePassword)
-	if len(password) == 0 {
-		return "", errors.New("you must input password")
-	}
-	return password, nil
 }
