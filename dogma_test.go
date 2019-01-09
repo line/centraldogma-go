@@ -19,7 +19,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/veqryn/h2c"
 	"golang.org/x/net/http2"
+	"golang.org/x/oauth2"
 )
 
 const token = "appToken-fdbe78b0-1d0c-4978-bbb1-9bc7106dad36"
