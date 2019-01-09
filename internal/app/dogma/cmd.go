@@ -152,12 +152,12 @@ func newDogmaClient(c *cli.Context, baseURL string) (client *centraldogma.Client
 
 	if !enabled {
 		// Create a client with the anonymous token.
-		return centraldogma.NewClientWithToken(baseURL, "anonymous")
+		return centraldogma.NewClientWithToken(baseURL, "anonymous", nil)
 	}
 
 	token := c.Parent().String("token")
 	if len(token) != 0 {
-		if client, err = centraldogma.NewClientWithToken(baseURL, token); err != nil {
+		if client, err = centraldogma.NewClientWithToken(baseURL, token, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -175,7 +175,7 @@ func createQuery(repoPath string, jsonPaths []string) *centraldogma.Query {
 
 func checkIfSecurityEnabled(baseURL string) (bool, error) {
 	// Create a client with the anonymous token just to check the security is enabled.
-	client, err := centraldogma.NewClientWithToken(baseURL, "anonymous")
+	client, err := centraldogma.NewClientWithToken(baseURL, "anonymous", nil)
 	if err != nil {
 		return false, err
 	}

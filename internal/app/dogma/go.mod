@@ -3,7 +3,7 @@ module go.linecorp.com/centraldogma/internal/app/dogma
 require (
 	github.com/fhs/go-netrc v1.0.0
 	github.com/urfave/cli v1.20.0
-	go.linecorp.com/centraldogma v0.0.0-20181220074123-455505acb33f
-	golang.org/x/net v0.0.0-20181217023233-e147a9138326 // indirect
-	golang.org/x/sys v0.0.0-20181218192612-074acd46bca6 // indirect
+	go.linecorp.com/centraldogma v0.0.0-20190109074743-a046020b8d80
+	golang.org/x/net v0.0.0-20190108225652-1e06a53dbb7e // indirect
+	golang.org/x/sys v0.0.0-20190108104531-7fbe1cd0fcc2 // indirect
 )
