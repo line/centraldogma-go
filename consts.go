@@ -10,6 +10,12 @@ var (
 	ErrQueryMustBeSet = fmt.Errorf("query should not be nil")
 
 	ErrWatcherClosed = fmt.Errorf("watcher is closed")
+
+	ErrTokenInvalid = fmt.Errorf("token should not be empty")
+
+	ErrTransportMustBeSet = fmt.Errorf("transport should not be nil")
+
+	ErrTransportMustNotBeOauth2 = fmt.Errorf("transport cannot be oauth2.Transport")
 )
 
 const (
