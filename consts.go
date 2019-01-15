@@ -24,4 +24,6 @@ const (
 	DefaultChannelBuffer = 128
 
 	UnknownHttpStatusCode = 0
+
+	DefaultClientName = "centralDogmaClient"
 )

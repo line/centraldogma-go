@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package centraldogma
 
 import (
@@ -22,11 +23,14 @@ import (
 
 var metricOnce sync.Once
 var globalPrometheusMetricCollector *metrics.Metrics
+var globalPrometheusSink metrics.MetricSink
 
 // DefaultMetricCollectorConfig returns default metric collector config.
 func DefaultMetricCollectorConfig(name string) (c *metrics.Config) {
+	if name == "" {
+		name = DefaultClientName
+	}
 	c = metrics.DefaultConfig(name)
-	c.EnableServiceLabel = true
 	return
 }
 
@@ -39,9 +43,9 @@ func GlobalPrometheusMetricCollector(config *metrics.Config) (m *metrics.Metrics
 	}
 
 	metricOnce.Do(func() {
-		sink, err := promMetrics.NewPrometheusSink()
+		globalPrometheusSink, err = promMetrics.NewPrometheusSink()
 		if err == nil {
-			globalPrometheusMetricCollector, err = metrics.New(config, sink)
+			globalPrometheusMetricCollector, err = metrics.New(config, globalPrometheusSink)
 		}
 
 		if err != nil {

@@ -11,22 +11,27 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.package centraldogma
+
 package centraldogma
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"reflect"
 	"testing"
 
 	metrics "github.com/armon/go-metrics"
+	promMetrics "github.com/armon/go-metrics/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func TestDefaultMetricCollectorConfig(t *testing.T) {
-	cnf := DefaultMetricCollectorConfig("dummy")
-
-	if !cnf.EnableServiceLabel {
+	if cnf := DefaultMetricCollectorConfig("dummy"); cnf.ServiceName != "dummy" {
 		t.Fatal()
 	}
 
-	if cnf.ServiceName != "dummy" {
+	if cnf := DefaultMetricCollectorConfig(""); cnf.ServiceName != DefaultClientName {
 		t.Fatal()
 	}
 }
@@ -61,4 +66,32 @@ func TestStatsdAndStatsiteMetricCollector(t *testing.T) {
 
 	checker(StatsdMetricCollector)
 	checker(StatsiteMetricCollector)
+}
+
+func TestMetricCollector(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/api/v1/projects", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, http.MethodGet)
+		testURLQuery(t, r, "status", "removed")
+		fmt.Fprint(w, `[{"name":"foo"}, {"name":"bar"}]`)
+	})
+
+	projects, _, _ := c.ListRemovedProjects(context.Background())
+	want := []*Project{{Name: "foo"}, {Name: "bar"}}
+	if !reflect.DeepEqual(projects, want) {
+		t.Errorf("ListRemovedProjects returned %+v, want %+v", projects, want)
+	}
+
+	sink := globalPrometheusSink.(*promMetrics.PrometheusSink)
+
+	ch := make(chan prometheus.Metric, 100)
+	sink.Collect(ch)
+
+	if metric, ok := <-ch; !ok || metric == nil {
+		t.Fatal()
+	} else {
+		t.Log(metric.Desc().String())
+	}
 }
