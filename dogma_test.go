@@ -46,7 +46,9 @@ func setup() (*Client, *http.ServeMux, func()) {
 	certPool := x509.NewCertPool()
 	certPool.AddCert(server.Certificate())
 	tlsClientConfig := &tls.Config{RootCAs: certPool}
+
 	c, _ := NewClientWithToken(normalizedURL(server.URL).String(), token, &http2.Transport{TLSClientConfig: tlsClientConfig})
+	c.SetMetricCollector(GlobalPrometheusMetricCollector(DefaultMetricCollectorConfig("testClient")))
 	return c, mux, server.Close
 }
 
@@ -163,7 +165,7 @@ func TestDefaultHTTP2Transport(t *testing.T) {
 
 func TestDefaultOauth2Transport(t *testing.T) {
 	baseURL := "https://localhost/"
-	http2Transport, _ := DefaultHTTP2Transport(baseURL);
+	http2Transport, _ := DefaultHTTP2Transport(baseURL)
 	oauth2Transport, _ := DefaultOauth2Transport(baseURL, "myToken", http2Transport)
 	if oauth2Transport.Base != http2Transport {
 		t.Errorf("oauth2Transport.Base is %+v, want %+v", oauth2Transport.Base, http2Transport)
