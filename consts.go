@@ -16,6 +16,8 @@ var (
 	ErrTransportMustBeSet = fmt.Errorf("transport should not be nil")
 
 	ErrTransportMustNotBeOauth2 = fmt.Errorf("transport cannot be oauth2.Transport")
+
+	ErrMetricCollectorConfigMustBeSet = fmt.Errorf("metric collector config should not be nil")
 )
 
 const (

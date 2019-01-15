@@ -48,7 +48,8 @@ func setup() (*Client, *http.ServeMux, func()) {
 	tlsClientConfig := &tls.Config{RootCAs: certPool}
 
 	c, _ := NewClientWithToken(normalizedURL(server.URL).String(), token, &http2.Transport{TLSClientConfig: tlsClientConfig})
-	c.SetMetricCollector(GlobalPrometheusMetricCollector(DefaultMetricCollectorConfig("testClient")))
+	mc, _ := GlobalPrometheusMetricCollector(DefaultMetricCollectorConfig("testClient"))
+	c.SetMetricCollector(mc)
 	return c, mux, server.Close
 }
 
