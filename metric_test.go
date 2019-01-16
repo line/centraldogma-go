@@ -91,7 +91,5 @@ func TestMetricCollector(t *testing.T) {
 
 	if metric, ok := <-ch; !ok || metric == nil {
 		t.Fatal()
-	} else {
-		t.Log(metric.Desc().String())
 	}
 }

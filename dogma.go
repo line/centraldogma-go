@@ -95,7 +95,7 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 		return nil, err
 	}
 
-	client, err := newOauth2HTTP2Client(normalizedURL.String(), token, transport)
+	client, err := newOAuth2HTTP2Client(normalizedURL.String(), token, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +103,10 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 	return newClientWithHTTPClient(normalizedURL, client)
 }
 
-// DefaultOauth2Transport returns an oauth2.Transport which internally uses the specified transport and attaches
+// DefaultOAuth2Transport returns an oauth2.Transport which internally uses the specified transport and attaches
 // the specified token to every request using the authorization header. If the transport is a type of oauth2.Transport,
 // it will throw an error.
-func DefaultOauth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
+func DefaultOAuth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
 	if len(token) == 0 {
 		return nil, ErrTokenInvalid
 	}
@@ -116,7 +116,7 @@ func DefaultOauth2Transport(baseURL, token string, transport http.RoundTripper) 
 
 	_, ok := transport.(*oauth2.Transport)
 	if ok {
-		return nil, ErrTransportMustNotBeOauth2
+		return nil, ErrTransportMustNotBeOAuth2
 	}
 
 	normalizedURL, err := normalizeURL(baseURL)
@@ -151,7 +151,7 @@ func DefaultHTTP2Transport(baseURL string) (*http2.Transport, error) {
 	return &http2.Transport{}, nil // H2
 }
 
-func newOauth2HTTP2Client(normalizedURL, token string, transport http.RoundTripper) (c *http.Client, err error) {
+func newOAuth2HTTP2Client(normalizedURL, token string, transport http.RoundTripper) (c *http.Client, err error) {
 	if transport == nil {
 		transport, err = DefaultHTTP2Transport(normalizedURL)
 		if err != nil {
@@ -161,7 +161,7 @@ func newOauth2HTTP2Client(normalizedURL, token string, transport http.RoundTripp
 
 	_, ok := transport.(*oauth2.Transport)
 	if !ok {
-		transport, err = DefaultOauth2Transport(normalizedURL, token, transport)
+		transport, err = DefaultOAuth2Transport(normalizedURL, token, transport)
 		if err != nil {
 			return nil, err
 		}
