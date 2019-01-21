@@ -636,12 +636,12 @@ func (c *Client) RepoWatcher(projectName, repoName, pathPattern string) (*Watche
 }
 
 // SetMetricCollector sets metric collector for the client.
-// For example with prometheus:
+// For example, with Prometheus:
 //     config := centraldogma.DefaultMetricCollectorConfig("client_name")
 //     metricCollector := centraldogma.GlobalPrometheusMetricCollector(config)
 //     client.SetMetricCollector(metricCollector)
 //
-// Or statsd:
+// Or Statsd:
 //     config := centraldogma.DefaultMetricCollectorConfig("client_name")
 //     metricCollector, err := centraldogma.StatsdMetricCollector(config, "127.0.0.1:8125")
 //     if err != nil {
