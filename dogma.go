@@ -108,7 +108,7 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 // it will throw an error.
 func DefaultOAuth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
 	if len(token) == 0 {
-		return nil, ErrTokenInvalid
+		return nil, ErrTokenEmpty
 	}
 	if transport == nil {
 		return nil, ErrTransportMustBeSet
@@ -306,7 +306,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 		statusCode = UnknownHttpStatusCode
 	}
 
-	// report metric
+	// report duration metric (even if error happened)
 	if c.metricCollector != nil {
 		metricLabels = append(metricLabels, metrics.Label{Name: "statusCode", Value: strconv.Itoa(statusCode)})
 		c.metricCollector.MeasureSinceWithLabels([]string{"requestDuration"}, startAt, metricLabels)
@@ -314,6 +314,9 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 
 	// check request error
 	if err != nil {
+		if c.metricCollector != nil {
+			c.metricCollector.IncrCounter([]string{"totalRequestFail"}, 1)
+		}
 		return
 	}
 

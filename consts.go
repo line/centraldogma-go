@@ -11,7 +11,7 @@ var (
 
 	ErrWatcherClosed = fmt.Errorf("watcher is closed")
 
-	ErrTokenInvalid = fmt.Errorf("token should not be empty")
+	ErrTokenEmpty = fmt.Errorf("token should not be empty")
 
 	ErrTransportMustBeSet = fmt.Errorf("transport should not be nil")
 
