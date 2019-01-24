@@ -39,16 +39,17 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
+	metrics "github.com/armon/go-metrics"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
 	"golang.org/x/oauth2"
@@ -77,6 +78,9 @@ type Client struct {
 	repository *repositoryService
 	content    *contentService
 	watch      *watchService
+
+	// metrics
+	metricCollector *metrics.Metrics
 }
 
 type service struct {
@@ -91,7 +95,7 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 		return nil, err
 	}
 
-	client, err := newOauth2HTTP2Client(normalizedURL.String(), token, transport)
+	client, err := newOAuth2HTTP2Client(normalizedURL.String(), token, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -99,20 +103,20 @@ func NewClientWithToken(baseURL, token string, transport http.RoundTripper) (*Cl
 	return newClientWithHTTPClient(normalizedURL, client)
 }
 
-// DefaultOauth2Transport returns an oauth2.Transport which internally uses the specified transport and attaches
+// DefaultOAuth2Transport returns an oauth2.Transport which internally uses the specified transport and attaches
 // the specified token to every request using the authorization header. If the transport is a type of oauth2.Transport,
 // it will throw an error.
-func DefaultOauth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
+func DefaultOAuth2Transport(baseURL, token string, transport http.RoundTripper) (*oauth2.Transport, error) {
 	if len(token) == 0 {
-		return nil, errors.New("token should not be empty")
+		return nil, ErrTokenEmpty
 	}
 	if transport == nil {
-		return nil, errors.New("transport should not be nil")
+		return nil, ErrTransportMustBeSet
 	}
 
 	_, ok := transport.(*oauth2.Transport)
 	if ok {
-		return nil, errors.New("transport cannot be oauth2.Transport")
+		return nil, ErrTransportMustNotBeOAuth2
 	}
 
 	normalizedURL, err := normalizeURL(baseURL)
@@ -147,7 +151,7 @@ func DefaultHTTP2Transport(baseURL string) (*http2.Transport, error) {
 	return &http2.Transport{}, nil // H2
 }
 
-func newOauth2HTTP2Client(normalizedURL, token string, transport http.RoundTripper) (c *http.Client, err error) {
+func newOAuth2HTTP2Client(normalizedURL, token string, transport http.RoundTripper) (c *http.Client, err error) {
 	if transport == nil {
 		transport, err = DefaultHTTP2Transport(normalizedURL)
 		if err != nil {
@@ -157,7 +161,7 @@ func newOauth2HTTP2Client(normalizedURL, token string, transport http.RoundTripp
 
 	_, ok := transport.(*oauth2.Transport)
 	if !ok {
-		transport, err = DefaultOauth2Transport(normalizedURL, token, transport)
+		transport, err = DefaultOAuth2Transport(normalizedURL, token, transport)
 		if err != nil {
 			return nil, err
 		}
@@ -262,42 +266,87 @@ type errorMessage struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (int, error) {
-	req = req.WithContext(ctx)
-	res, err := c.client.Do(req)
-	if err != nil {
-		return UnknownHttpStatusCode, err
-	}
-	defer func() {
+func drainupAndCloseResponseBody(body io.ReadCloser) {
+	if body != nil {
 		// drain up 512 bytes and close the body to reuse connection
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.CopyN(ioutil.Discard, res.Body, 512)
+		io.CopyN(ioutil.Discard, body, 512)
 
-		res.Body.Close()
-	}()
+		// close body
+		body.Close()
+	}
+}
 
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
+func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (statusCode int, err error) {
+	req = req.WithContext(ctx)
+
+	// prepare metrics
+	var metricLabels []metrics.Label
+	if c.metricCollector != nil {
+		metricLabels = []metrics.Label{
+			{Name: "method", Value: req.Method},
+			{Name: "host", Value: req.URL.Host},              // included port
+			{Name: "path", Value: req.URL.EscapedPath()},     // escaped path
+			{Name: "query", Value: req.URL.Query().Encode()}, // encoded query
+		}
+	}
+
+	// mark the time point when request begins
+	startAt := time.Now()
+
+	// make request
+	res, err := c.client.Do(req)
+
+	// get response status code
+	if err == nil {
+		statusCode = res.StatusCode
+	} else {
+		statusCode = UnknownHttpStatusCode
+	}
+
+	// report duration metric (even if error happened)
+	if c.metricCollector != nil {
+		metricLabels = append(metricLabels, metrics.Label{Name: "statusCode", Value: strconv.Itoa(statusCode)})
+		c.metricCollector.MeasureSinceWithLabels([]string{"requestDuration"}, startAt, metricLabels)
+	}
+
+	// check request error
+	if err != nil {
+		if c.metricCollector != nil {
+			c.metricCollector.IncrCounter([]string{"totalRequestFail"}, 1)
+		}
+		return
+	}
+
+	// handling status code
+	startAt = time.Now()
+	if statusCode < 200 || statusCode >= 300 {
 		errorMessage := &errorMessage{}
 
 		err = json.NewDecoder(res.Body).Decode(errorMessage)
 		if err != nil {
-			err = fmt.Errorf("status: %v", res.StatusCode)
+			err = fmt.Errorf("status: %v", statusCode)
 		} else {
-			err = fmt.Errorf("%s (status: %v)", errorMessage.Message, res.StatusCode)
+			err = fmt.Errorf("%s (status: %v)", errorMessage.Message, statusCode)
 		}
-
-		return res.StatusCode, err
-	}
-
-	if resContent != nil {
+	} else if resContent != nil {
 		err = json.NewDecoder(res.Body).Decode(resContent)
 		if err == io.EOF { // empty response body
 			err = nil
 		}
 	}
-	return res.StatusCode, err
+
+	// report metric
+	if c.metricCollector != nil {
+		c.metricCollector.MeasureSinceWithLabels([]string{"parseDuration"}, startAt, metricLabels)
+	}
+
+	// never forget to drain up and close before returning
+	drainupAndCloseResponseBody(res.Body)
+
+	return
 }
 
 // CreateProject creates a project.
@@ -587,4 +636,21 @@ func (c *Client) RepoWatcher(projectName, repoName, pathPattern string) (*Watche
 	}
 	rw.start()
 	return rw, nil
+}
+
+// SetMetricCollector sets metric collector for the client.
+// For example, with Prometheus:
+//     config := centraldogma.DefaultMetricCollectorConfig("client_name")
+//     metricCollector := centraldogma.GlobalPrometheusMetricCollector(config)
+//     client.SetMetricCollector(metricCollector)
+//
+// Or Statsd:
+//     config := centraldogma.DefaultMetricCollectorConfig("client_name")
+//     metricCollector, err := centraldogma.StatsdMetricCollector(config, "127.0.0.1:8125")
+//     if err != nil {
+//         panic(err)
+//     }
+//     client.SetMetricCollector(metricCollector)
+func (c *Client) SetMetricCollector(m *metrics.Metrics) {
+	c.metricCollector = m
 }
