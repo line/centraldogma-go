@@ -269,11 +269,11 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 		return UnknownHttpStatusCode, err
 	}
 	defer func() {
-		// drain up 512 bytes and close the body to reuse connection
+		// drain up and close the body to reuse connection
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.CopyN(ioutil.Discard, res.Body, 512)
+		io.Copy(ioutil.Discard, res.Body)
 
 		res.Body.Close()
 	}()
