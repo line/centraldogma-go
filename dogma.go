@@ -268,11 +268,11 @@ type errorMessage struct {
 
 func drainupAndCloseResponseBody(body io.ReadCloser) {
 	if body != nil {
-		// drain up 512 bytes and close the body to reuse connection
+		// drain up and close the body to reuse connection
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.CopyN(ioutil.Discard, body, 512)
+		io.Copy(ioutil.Discard, body)
 
 		// close body
 		body.Close()
