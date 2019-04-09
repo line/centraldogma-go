@@ -11,13 +11,13 @@
 ```go
 import "go.linecorp.com/centraldogma"
 
-// create client with outh2 token
+// create client with OAuth2 token
 centraldogma.NewClientWithToken(baseURL, token, nil)
 ```
 
 ### Customize transport
 
-If transport is `nil` (like above), `http2.Transport` is used by default. You could inject your own easily:
+If transport is `nil` (like above), `http2.Transport` is used by default. You could inject your own transport easily:
 
 ```go
 import "golang.org/x/net/http2"
