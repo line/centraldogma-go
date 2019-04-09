@@ -19,7 +19,7 @@ centraldogma.NewClientWithToken(baseURL, token, nil)
 
 If transport is `nil` (like above), `http2.Transport` is used by default. You could inject your own easily:
 
-```
+```go
 import "golang.org/x/net/http2"
 
 tr := &http2.Transport{
