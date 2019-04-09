@@ -6,7 +6,7 @@
 
 ## Usage
 
-### Create client
+### Getting started
 
 ```go
 import "go.linecorp.com/centraldogma"
