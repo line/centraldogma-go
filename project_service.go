@@ -43,7 +43,7 @@ func (p *projectService) create(ctx context.Context, name string) (*Project, int
 	}
 
 	project := new(Project)
-	httpStatusCode, err := p.client.do(ctx, req, project)
+	httpStatusCode, err := p.client.do(ctx, req, project, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -58,7 +58,7 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 		return UnknownHttpStatusCode, err
 	}
 
-	httpStatusCode, err := p.client.do(ctx, req, nil)
+	httpStatusCode, err := p.client.do(ctx, req, nil, false)
 	if err != nil {
 		return httpStatusCode, err
 	}
@@ -74,7 +74,7 @@ func (p *projectService) unremove(ctx context.Context, name string) (*Project, i
 	}
 
 	project := new(Project)
-	httpStatusCode, err := p.client.do(ctx, req, project)
+	httpStatusCode, err := p.client.do(ctx, req, project, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -90,7 +90,7 @@ func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
 	}
 
 	var projects []*Project
-	httpStatusCode, err := p.client.do(ctx, req, &projects)
+	httpStatusCode, err := p.client.do(ctx, req, &projects, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -106,7 +106,7 @@ func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, erro
 	}
 
 	var projects []*Project
-	httpStatusCode, err := p.client.do(ctx, req, &projects)
+	httpStatusCode, err := p.client.do(ctx, req, &projects, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}

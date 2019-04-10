@@ -172,7 +172,7 @@ func (con *contentService) listFiles(ctx context.Context,
 	}
 
 	var entries []*Entry
-	httpStatusCode, err := con.client.do(ctx, req, &entries)
+	httpStatusCode, err := con.client.do(ctx, req, &entries, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -211,7 +211,7 @@ func (con *contentService) getFile(
 	}
 
 	entry := new(Entry)
-	httpStatusCode, err := con.client.do(ctx, req, entry)
+	httpStatusCode, err := con.client.do(ctx, req, entry, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -264,7 +264,7 @@ func (con *contentService) getFiles(ctx context.Context,
 	}
 
 	var entries []*Entry
-	httpStatusCode, err := con.client.do(ctx, req, &entries)
+	httpStatusCode, err := con.client.do(ctx, req, &entries, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -293,7 +293,7 @@ func (con *contentService) getHistory(ctx context.Context,
 	}
 
 	var commits []*Commit
-	httpStatusCode, err := con.client.do(ctx, req, &commits)
+	httpStatusCode, err := con.client.do(ctx, req, &commits, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -331,7 +331,7 @@ func (con *contentService) getDiff(ctx context.Context,
 	}
 
 	change := new(Change)
-	httpStatusCode, err := con.client.do(ctx, req, change)
+	httpStatusCode, err := con.client.do(ctx, req, change, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -367,7 +367,7 @@ func (con *contentService) getDiffs(ctx context.Context,
 	}
 
 	var changes []*Change
-	httpStatusCode, err := con.client.do(ctx, req, &changes)
+	httpStatusCode, err := con.client.do(ctx, req, &changes, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -404,7 +404,7 @@ func (con *contentService) push(ctx context.Context, projectName, repoName, base
 	}
 
 	pushResult := new(PushResult)
-	httpStatusCode, err := con.client.do(ctx, req, pushResult)
+	httpStatusCode, err := con.client.do(ctx, req, pushResult, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}

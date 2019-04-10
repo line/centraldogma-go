@@ -231,7 +231,7 @@ func TestNewClientWithToken_h2c(t *testing.T) {
 	hello := &helloArmeria{}
 
 	defer res.Body.Close()
-	json.NewDecoder(res.Body).Decode(hello)
+	_ = json.NewDecoder(res.Body).Decode(hello)
 	testString(t, hello.Hello, "Armeria", "hello")
 }
 
@@ -257,7 +257,7 @@ func TestNewClientWithToken_h1c(t *testing.T) {
 	hello := &helloArmeria{}
 
 	defer res.Body.Close()
-	json.NewDecoder(res.Body).Decode(hello)
+	_ = json.NewDecoder(res.Body).Decode(hello)
 	testString(t, hello.Hello, "Armeria", "hello")
 }
 
