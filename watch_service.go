@@ -358,7 +358,7 @@ func (w *Watcher) doWatch() {
 		return
 	}
 
-	if watchResult.HttpStatusCode != 304 {
+	if watchResult.HttpStatusCode != http.StatusNotModified {
 		// converting watch result and feed back to initial value channel if needed
 		if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
 			// The initial latest is set for the first time. So write the value to initialValueCh as well.

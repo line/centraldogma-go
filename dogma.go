@@ -323,7 +323,7 @@ func (c *Client) do(ctx context.Context,
 
 	// handling status code
 	startAt = time.Now()
-	if !watchRequest || statusCode != 304 {
+	if !watchRequest || statusCode != http.StatusNotModified {
 		if statusCode < 200 || statusCode >= 300 {
 			errorMessage := &errorMessage{}
 

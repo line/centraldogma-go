@@ -44,7 +44,7 @@ func TestWatchFile(t *testing.T) {
 			// Let's pretend that the content is modified after 100 Millisecond.
 			time.Sleep(100 * time.Millisecond)
 			if notModifiedResponse {
-				w.WriteHeader(304)
+				w.WriteHeader(http.StatusNotModified)
 				notModifiedResponse = false;
 			} else {
 				fmt.Fprint(w, response)
