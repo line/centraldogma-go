@@ -11,13 +11,16 @@
 ```go
 import "go.linecorp.com/centraldogma"
 
-// create client with OAuth2 token
+// create a client with OAuth2 token
+// See also: https://line.github.io/centraldogma/auth.html#application-token
 centraldogma.NewClientWithToken(baseURL, token, nil)
 ```
 
 ### Customize transport
 
-If transport is `nil` (like above), `http2.Transport` is used by default. You could inject your own transport easily:
+If transport is `nil` (like above), `http2.Transport` is used by default.
+
+You could inject your own transport easily:
 
 ```go
 import "golang.org/x/net/http2"
@@ -26,7 +29,7 @@ tr := &http2.Transport{
     DisableCompression: false,
 }
 
-// create client
+// create a client with custom transport
 centraldogma.NewClientWithToken(baseURL, token, tr)
 ```
 
@@ -43,7 +46,7 @@ import (
 	"go.linecorp.com/centraldogma"
 )
 
-// CentralDogmaFile represents a file in central dogma.
+// CentralDogmaFile represents a file in application repository, stored on Central Dogma server.
 type CentralDogmaFile struct {
 	client            atomic.Value
 	BaseURL           string       `yaml:"base_url" json:"base_url"`
@@ -60,7 +63,7 @@ func (c *CentralDogmaFile) getClientOrSet() (*centraldogma.Client, error) {
 		return v, nil
 	}
 
-	// create new client
+	// create a new client
 	dogmaClient, err := centraldogma.NewClientWithToken(c.BaseURL, c.Token, nil)
 	if err != nil {
 		return nil, err
@@ -72,7 +75,7 @@ func (c *CentralDogmaFile) getClientOrSet() (*centraldogma.Client, error) {
 	return dogmaClient, nil
 }
 
-// Fetch file content from central dogma.
+// Fetch file content from Central Dogma.
 func (c *CentralDogmaFile) Fetch(ctx context.Context) (b []byte, err error) {
 	dogmaClient, err := c.getClientOrSet()
 	if err != nil {
