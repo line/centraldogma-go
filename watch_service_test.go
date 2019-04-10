@@ -33,6 +33,8 @@ func TestWatchFile(t *testing.T) {
 	c, mux, teardown := setup()
 	defer teardown()
 
+	notModifiedResponse := true
+
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/a.json",
 		func(w http.ResponseWriter, r *http.Request) {
 			testMethod(t, r, http.MethodGet)
@@ -41,7 +43,12 @@ func TestWatchFile(t *testing.T) {
 
 			// Let's pretend that the content is modified after 100 Millisecond.
 			time.Sleep(100 * time.Millisecond)
-			fmt.Fprint(w, response)
+			if notModifiedResponse {
+				w.WriteHeader(http.StatusNotModified)
+				notModifiedResponse = false;
+			} else {
+				fmt.Fprint(w, response)
+			}
 		})
 
 	query := &Query{Path: "/a.json", Type: Identity}
@@ -127,8 +134,8 @@ func TestWatcher(t *testing.T) {
 	listener1 := func(value WatchResult) { myCh1 <- value }
 	listener2 := func(value WatchResult) { myCh2 <- value }
 
-	fw.Watch(listener1)
-	fw.Watch(listener2)
+	_ = fw.Watch(listener1)
+	_ = fw.Watch(listener2)
 
 	want := 2
 	for i := 0; i < 5; i++ {
@@ -144,7 +151,7 @@ func testChannelValue(t *testing.T, myCh <-chan WatchResult, want int) {
 		aStruct := struct {
 			A int `json:"a"`
 		}{}
-		json.Unmarshal(value.Entry.Content, &aStruct)
+		_ = json.Unmarshal(value.Entry.Content, &aStruct)
 		if aStruct.A != want {
 			t.Errorf("watch returned: %v, want %v", aStruct.A, want)
 		}
@@ -176,7 +183,7 @@ func TestWatcher_convertingValueFunc(t *testing.T) {
 
 	myCh := make(chan WatchResult, 128)
 	listener := func(value WatchResult) { myCh <- value }
-	fw.Watch(listener)
+	_ = fw.Watch(listener)
 
 	want := 2
 	for i := 0; i < 10; i++ {
@@ -185,7 +192,7 @@ func TestWatcher_convertingValueFunc(t *testing.T) {
 			aStruct := struct {
 				A int `json:"a"`
 			}{}
-			json.Unmarshal(value.Entry.Content, &aStruct)
+			_ = json.Unmarshal(value.Entry.Content, &aStruct)
 			if aStruct.A != want {
 				t.Errorf("watch returned: %v, want %v", aStruct.A, want)
 			}
@@ -280,7 +287,7 @@ func TestRepoWatcher(t *testing.T) {
 
 	myCh := make(chan int, 128)
 	listener := func(value WatchResult) { myCh <- value.Revision }
-	fw.Watch(listener)
+	_ = fw.Watch(listener)
 
 	want := 2
 	for i := 0; i < 5; i++ {
@@ -318,7 +325,7 @@ func TestRepoWatcherInvalidPathPattern(t *testing.T) {
 
 		myCh := make(chan int, 128)
 		listener := func(value WatchResult) { myCh <- value.Revision }
-		fw.Watch(listener)
+		_ = fw.Watch(listener)
 
 		for i := 0; i < 2; i++ {
 			select {

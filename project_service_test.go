@@ -34,7 +34,7 @@ func TestCreateProject(t *testing.T) {
 		testAuthorization(t, r)
 
 		project := new(Project)
-		json.NewDecoder(r.Body).Decode(project)
+		_ = json.NewDecoder(r.Body).Decode(project)
 		if !reflect.DeepEqual(project, input) {
 			t.Errorf("Request body = %+v, want %+v", project, input)
 		}

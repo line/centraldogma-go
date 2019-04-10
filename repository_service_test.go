@@ -34,7 +34,7 @@ func TestCreateRepository(t *testing.T) {
 		testAuthorization(t, r)
 
 		repo := new(Repository)
-		json.NewDecoder(r.Body).Decode(repo)
+		_ = json.NewDecoder(r.Body).Decode(repo)
 		if !reflect.DeepEqual(repo, input) {
 			t.Errorf("Request body = %+v, want %+v", repo, input)
 		}

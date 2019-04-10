@@ -279,7 +279,8 @@ func drainupAndCloseResponseBody(body io.ReadCloser) {
 	}
 }
 
-func (c *Client) do(ctx context.Context, req *http.Request, resContent interface{}) (statusCode int, err error) {
+func (c *Client) do(ctx context.Context,
+	req *http.Request, resContent interface{}, watchRequest bool) (statusCode int, err error) {
 	req = req.WithContext(ctx)
 
 	// prepare metrics
@@ -322,19 +323,21 @@ func (c *Client) do(ctx context.Context, req *http.Request, resContent interface
 
 	// handling status code
 	startAt = time.Now()
-	if statusCode < 200 || statusCode >= 300 {
-		errorMessage := &errorMessage{}
+	if !watchRequest || statusCode != http.StatusNotModified {
+		if statusCode < 200 || statusCode >= 300 {
+			errorMessage := &errorMessage{}
 
-		err = json.NewDecoder(res.Body).Decode(errorMessage)
-		if err != nil {
-			err = fmt.Errorf("status: %v", statusCode)
-		} else {
-			err = fmt.Errorf("%s (status: %v)", errorMessage.Message, statusCode)
-		}
-	} else if resContent != nil {
-		err = json.NewDecoder(res.Body).Decode(resContent)
-		if err == io.EOF { // empty response body
-			err = nil
+			err = json.NewDecoder(res.Body).Decode(errorMessage)
+			if err != nil {
+				err = fmt.Errorf("status: %v", statusCode)
+			} else {
+				err = fmt.Errorf("%s (status: %v)", errorMessage.Message, statusCode)
+			}
+		} else if resContent != nil {
+			err = json.NewDecoder(res.Body).Decode(resContent)
+			if err == io.EOF { // empty response body
+				err = nil
+			}
 		}
 	}
 

@@ -57,7 +57,7 @@ func (ws *watchService) watchFile(
 
 	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, query.Path)
 	v := &url.Values{}
-	if query != nil && query.Type == JSONPath {
+	if query.Type == JSONPath {
 		if err := setJSONPaths(v, query.Path, query.Expressions); err != nil {
 			return &WatchResult{Err: err}
 		}
@@ -113,7 +113,7 @@ func (ws *watchService) watchRequest(
 	defer cancel()
 
 	watchResult := new(WatchResult)
-	httpStatusCode, err := ws.client.do(reqCtx, req, watchResult)
+	httpStatusCode, err := ws.client.do(reqCtx, req, watchResult, true)
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = fmt.Errorf("watch request timeout: %.3f second(s)", timeout.Seconds())
@@ -358,21 +358,23 @@ func (w *Watcher) doWatch() {
 		return
 	}
 
-	// converting watch result and feed back to initial value channel if needed
-	if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
-		// The initial latest is set for the first time. So write the value to initialValueCh as well.
-		w.initialValueCh <- watchResult
+	if watchResult.HttpStatusCode != http.StatusNotModified {
+		// converting watch result and feed back to initial value channel if needed
+		if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
+			// The initial latest is set for the first time. So write the value to initialValueCh as well.
+			w.initialValueCh <- watchResult
+		}
+
+		// store latest
+		w.latest.Store(watchResult)
+
+		// log latest revision
+		log.Debugf("Watcher noticed updated file: %s/%s%s, rev=%v",
+			w.projectName, w.repoName, w.pathPattern, watchResult.Revision)
+
+		// notify listener
+		w.notifyListeners()
 	}
-
-	// store latest
-	w.latest.Store(watchResult)
-
-	// log latest revision
-	log.Debugf("Watcher noticed updated file: %s/%s%s, rev=%v",
-		w.projectName, w.repoName, w.pathPattern, watchResult.Revision)
-
-	// notify listener
-	w.notifyListeners()
 
 	// wait for next attempt
 	w.numAttemptsSoFar = 0

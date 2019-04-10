@@ -257,7 +257,7 @@ func TestPush(t *testing.T) {
 		testURLQuery(t, r, "revision", "-1")
 
 		var reqBody push
-		json.NewDecoder(r.Body).Decode(&reqBody)
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 		changes := []*Change{{Path: "/a.json", Type: UpsertJSON, Content: map[string]interface{}{"a": "b"}}}
 		want := push{CommitMessage: &CommitMessage{Summary: "Add a.json"}, Changes: changes}
 		if !reflect.DeepEqual(reqBody, want) {
@@ -286,7 +286,7 @@ func TestPush_TwoFiles(t *testing.T) {
 		testURLQuery(t, r, "revision", "-1")
 
 		var reqBody push
-		json.NewDecoder(r.Body).Decode(&reqBody)
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 		changes := []*Change{{Path: "/a.json", Type: UpsertJSON, Content: map[string]interface{}{"a": "b"}},
 			{Path: "/b.txt", Type: UpsertText, Content: "myContent"}}
 		want := push{CommitMessage: &CommitMessage{Summary: "Add a.json and b.txt"}, Changes: changes}

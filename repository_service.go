@@ -40,7 +40,7 @@ func (r *repositoryService) create(ctx context.Context, projectName, repoName st
 	}
 
 	repo := new(Repository)
-	httpStatusCode, err := r.client.do(ctx, req, repo)
+	httpStatusCode, err := r.client.do(ctx, req, repo, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -56,7 +56,7 @@ func (r *repositoryService) remove(ctx context.Context, projectName, repoName st
 		return UnknownHttpStatusCode, err
 	}
 
-	httpStatusCode, err := r.client.do(ctx, req, nil)
+	httpStatusCode, err := r.client.do(ctx, req, nil, false)
 	if err != nil {
 		return httpStatusCode, err
 	}
@@ -72,7 +72,7 @@ func (r *repositoryService) unremove(ctx context.Context, projectName, repoName 
 	}
 
 	repo := new(Repository)
-	httpStatusCode, err := r.client.do(ctx, req, repo)
+	httpStatusCode, err := r.client.do(ctx, req, repo, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -88,7 +88,7 @@ func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Re
 	}
 
 	var repos []*Repository
-	httpStatusCode, err := r.client.do(ctx, req, &repos)
+	httpStatusCode, err := r.client.do(ctx, req, &repos, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -104,7 +104,7 @@ func (r *repositoryService) listRemoved(ctx context.Context, projectName string)
 	}
 
 	var repos []*Repository
-	httpStatusCode, err := r.client.do(ctx, req, &repos)
+	httpStatusCode, err := r.client.do(ctx, req, &repos, false)
 	if err != nil {
 		return nil, httpStatusCode, err
 	}
@@ -121,7 +121,7 @@ func (r *repositoryService) normalizeRevision(
 	}
 
 	rev := new(rev)
-	httpStatusCode, err := r.client.do(ctx, req, rev)
+	httpStatusCode, err := r.client.do(ctx, req, rev, false)
 	if err != nil {
 		return -1, httpStatusCode, err
 	}
