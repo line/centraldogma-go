@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -147,9 +146,8 @@ type Watcher struct {
 	watchCTX        context.Context
 	watchCancelFunc func()
 
-	latest              atomic.Value
-	updateListenerChans []chan *WatchResult
-	listenersMutex      sync.RWMutex
+	latest              atomic.Value // *WatchResult
+	updateListenerChans atomic.Value // []chan *WatchResult
 
 	doWatchFunc func(ctx context.Context, lastKnownRevision int) *WatchResult
 
@@ -221,6 +219,22 @@ func (w *Watcher) Close() {
 	w.watchCancelFunc() // After the first call, subsequent calls to a CancelFunc do nothing.
 }
 
+func (w *Watcher) addListenerChan(ch chan *WatchResult) {
+	// using `_` to prevent `nil` casting panic
+	chans, _ := w.updateListenerChans.Load().([]chan *WatchResult)
+
+	// get number of chans
+	n := len(chans)
+
+	// copy-on-write
+	cow := make([]chan *WatchResult, n+1)
+	copy(cow, chans) // work even if chans == nil
+	cow[n] = ch
+
+	// store back
+	w.updateListenerChans.Store(cow)
+}
+
 // Watch registers a func that will be invoked when the value of the watched entry becomes available or changes.
 func (w *Watcher) Watch(listener WatchListener) error {
 	if listener == nil {
@@ -236,10 +250,7 @@ func (w *Watcher) Watch(listener WatchListener) error {
 	ch := make(chan *WatchResult, 32)
 	go w.notifier(listener, ch)
 
-	w.listenersMutex.Lock()
-	w.updateListenerChans = append(w.updateListenerChans, ch)
-	w.listenersMutex.Unlock()
-
+	// check latest and give to notifer (via channel) asap
 	if latest := w.Latest(); latest.Err == nil {
 		select {
 		case <-w.watchCTX.Done():
@@ -248,6 +259,9 @@ func (w *Watcher) Watch(listener WatchListener) error {
 		case ch <- latest:
 		}
 	}
+
+	// add listener channel to managed collection
+	w.addListenerChan(ch)
 
 	return nil
 }
@@ -360,7 +374,7 @@ func (w *Watcher) doWatch() {
 
 	if watchResult.HttpStatusCode != http.StatusNotModified {
 		// converting watch result and feed back to initial value channel if needed
-		if w.isInitialValueChSet == 0 && atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
+		if atomic.CompareAndSwapInt32(&w.isInitialValueChSet, 0, 1) {
 			// The initial latest is set for the first time. So write the value to initialValueCh as well.
 			w.initialValueCh <- watchResult
 		}
@@ -406,10 +420,8 @@ func (w *Watcher) notifyListeners() {
 
 	latest := w.Latest()
 
-	w.listenersMutex.RLock()
-	listenerChanSnapshot := make([]chan *WatchResult, len(w.updateListenerChans))
-	copy(listenerChanSnapshot, w.updateListenerChans)
-	w.listenersMutex.RUnlock()
+	// using `_` to prevent `nil` casting panic
+	listenerChanSnapshot, _ := w.updateListenerChans.Load().([]chan *WatchResult)
 
 	for _, listener := range listenerChanSnapshot {
 		select {
