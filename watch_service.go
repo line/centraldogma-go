@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -148,6 +149,7 @@ type Watcher struct {
 
 	latest              atomic.Value // *WatchResult
 	updateListenerChans atomic.Value // []chan *WatchResult
+	listenerChansLock   int32        // spin lock
 
 	doWatchFunc func(ctx context.Context, lastKnownRevision int) *WatchResult
 
@@ -220,19 +222,29 @@ func (w *Watcher) Close() {
 }
 
 func (w *Watcher) addListenerChan(ch chan *WatchResult) {
-	// using `_` to prevent `nil` casting panic
-	chans, _ := w.updateListenerChans.Load().([]chan *WatchResult)
+	for {
+		// try to acquire write lock
+		if atomic.CompareAndSwapInt32(&w.listenerChansLock, 0, 1) {
+			// using `_` to prevent `nil` casting panic
+			chans, _ := w.updateListenerChans.Load().([]chan *WatchResult)
 
-	// get number of chans
-	n := len(chans)
+			// get number of chans
+			n := len(chans)
 
-	// copy-on-write
-	cow := make([]chan *WatchResult, n+1)
-	copy(cow, chans) // work even if chans == nil
-	cow[n] = ch
+			// copy-on-write
+			cow := make([]chan *WatchResult, n+1)
+			copy(cow, chans) // work even if chans == nil
+			cow[n] = ch
 
-	// store back
-	w.updateListenerChans.Store(cow)
+			// store back
+			w.updateListenerChans.Store(cow)
+
+			// reset lock
+			atomic.CompareAndSwapInt32(&w.listenerChansLock, 1, 0)
+			return
+		}
+		runtime.Gosched()
+	}
 }
 
 // Watch registers a func that will be invoked when the value of the watched entry becomes available or changes.
