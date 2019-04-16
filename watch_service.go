@@ -262,7 +262,7 @@ func (w *Watcher) Watch(listener WatchListener) error {
 	ch := make(chan *WatchResult, 32)
 	go w.notifier(listener, ch)
 
-	// check latest and give to notifer (via channel) asap
+	// check the latest value and give it to the notifier asap
 	if latest := w.Latest(); latest.Err == nil {
 		select {
 		case <-w.watchCTX.Done():
