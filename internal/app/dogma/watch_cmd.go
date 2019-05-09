@@ -51,7 +51,17 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	cleanupDone := make(chan bool)
+	// prepare context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{}, 2)
+	notifyDone := func() {
+		select {
+		case <-ctx.Done():
+		case done <- struct{}{}: // notify
+		}
+	}
+
 	listener := func(watchResult dogma.WatchResult) {
 		revision := watchResult.Revision
 		if revision > normalizedRevision {
@@ -72,23 +82,34 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 
 			if !wc.streaming {
 				fw.Close()
-				cleanupDone <- true
+				notifyDone()
 			}
 		}
 	}
 
+	// start watching
 	fw.Watch(listener)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
-		for _ = range signalChan {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-signalChan:
 			fmt.Println("\nReceived an interrupt, stopping watcher...")
 			fw.Close()
-			cleanupDone <- true
+			notifyDone()
 		}
 	}()
-	<-cleanupDone
+
+	// wait until notified to done channel
+	<-done
+
+	// cancel context and leave
+	cancel()
+
 	return nil
 }
 
