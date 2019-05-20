@@ -37,7 +37,8 @@ type Author struct {
 func (p *projectService) create(ctx context.Context, name string) (*Project, int, error) {
 	u := defaultPathPrefix + "projects"
 
-	req, err := p.client.newRequest(http.MethodPost, u, &Project{Name: name})
+	body := map[string]string{"name": name}
+	req, err := p.client.newRequest(http.MethodPost, u, body)
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
 	}
