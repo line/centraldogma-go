@@ -46,7 +46,7 @@ func TestCreateRepository(t *testing.T) {
 	repo, httpStatusCode, _ := c.CreateRepository(context.Background(), "foo", "bar")
 	testStatusCode(t, httpStatusCode, 201)
 
-	want := &Repository{Name: "bar", Creator: &Author{Name: "minux", Email: "minux@m.x"}, HeadRevision: 2}
+	want := &Repository{Name: "bar", Creator: Author{Name: "minux", Email: "minux@m.x"}, HeadRevision: 2}
 	if !reflect.DeepEqual(repo, want) {
 		t.Errorf("CreateRepository returned %+v, want %+v", repo, want)
 	}
@@ -82,7 +82,7 @@ func TestUnremoveRepository(t *testing.T) {
 
 	repo, _, _ := c.UnremoveRepository(context.Background(), "foo", "bar")
 	want :=
-		&Repository{Name: "bar", Creator: &Author{Name: "minux", Email: "minux@m.x"},
+		&Repository{Name: "bar", Creator: Author{Name: "minux", Email: "minux@m.x"},
 			URL: "/api/v1/projects/foo/repos/bar", HeadRevision: 2}
 	if !reflect.DeepEqual(repo, want) {
 		t.Errorf("UnremoveRepository returned %+v, want %+v", repo, want)
@@ -109,9 +109,9 @@ func TestListRepositories(t *testing.T) {
 
 	repos, _, _ := c.ListRepositories(context.Background(), "foo")
 	want := []*Repository{
-		{Name: "bar", Creator: &Author{Name: "minux", Email: "minux@m.x"},
+		{Name: "bar", Creator: Author{Name: "minux", Email: "minux@m.x"},
 			URL: "/api/v1/projects/foo/repos/bar", HeadRevision: 2},
-		{Name: "baz", Creator: &Author{Name: "minux", Email: "minux@m.x"},
+		{Name: "baz", Creator: Author{Name: "minux", Email: "minux@m.x"},
 			URL: "/api/v1/projects/foo/repos/baz", HeadRevision: 3}}
 	if !reflect.DeepEqual(repos, want) {
 		t.Errorf("ListRepositories returned %+v, want %+v", repos, want)

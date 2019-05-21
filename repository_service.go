@@ -25,7 +25,7 @@ type repositoryService service
 // Repository represents a repository in the Central Dogma server.
 type Repository struct {
 	Name         string  `json:"name"`
-	Creator      *Author `json:"creator,omitempty"`
+	Creator      Author  `json:"creator,omitempty"`
 	HeadRevision int     `json:"headRevision,omitempty"`
 	URL          string  `json:"url,omitempty"`
 	CreatedAt    string  `json:"createdAt,omitempty"`
@@ -34,7 +34,8 @@ type Repository struct {
 func (r *repositoryService) create(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos", defaultPathPrefix, projectName)
 
-	req, err := r.client.newRequest(http.MethodPost, u, &Repository{Name: repoName})
+	body := map[string]string{"name": repoName}
+	req, err := r.client.newRequest(http.MethodPost, u, body)
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
 	}
