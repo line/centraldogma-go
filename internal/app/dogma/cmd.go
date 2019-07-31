@@ -160,6 +160,8 @@ func newDogmaClient(c *cli.Context, baseURL string) (client *centraldogma.Client
 		if client, err = centraldogma.NewClientWithToken(baseURL, token, nil); err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, cli.NewExitError("You must specify a token using '--token'.", 1)
 	}
 
 	return client, nil
