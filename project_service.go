@@ -66,6 +66,21 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 	return httpStatusCode, nil
 }
 
+func (p *projectService) purge(ctx context.Context, name string) (int, error) {
+	u := defaultPathPrefix + "projects/" + name + "/removed"
+
+	req, err := p.client.newRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
+
+	httpStatusCode, err := p.client.do(ctx, req, nil, false)
+	if err != nil {
+		return httpStatusCode, err
+	}
+	return httpStatusCode, nil
+}
+
 func (p *projectService) unremove(ctx context.Context, name string) (*Project, int, error) {
 	u := defaultPathPrefix + "projects/" + name
 

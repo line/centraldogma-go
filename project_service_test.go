@@ -65,6 +65,19 @@ func TestRemoveProject(t *testing.T) {
 	testStatusCode(t, httpStatusCode, 204)
 }
 
+func TestPurgeProject(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/api/v1/projects/foo/removed", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, http.MethodDelete)
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	httpStatusCode, _ := c.PurgeProject(context.Background(), "foo")
+	testStatusCode(t, httpStatusCode, 204)
+}
+
 func TestUnremoveProject(t *testing.T) {
 	c, mux, teardown := setup()
 	defer teardown()
