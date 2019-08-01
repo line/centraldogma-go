@@ -16,6 +16,7 @@ package centraldogma
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -52,7 +53,22 @@ func (p *projectService) create(ctx context.Context, name string) (*Project, int
 }
 
 func (p *projectService) remove(ctx context.Context, name string) (int, error) {
-	u := defaultPathPrefix + "projects/" + name
+	u := fmt.Sprintf("%sprojects/%s", defaultPathPrefix, name)
+
+	req, err := p.client.newRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
+
+	httpStatusCode, err := p.client.do(ctx, req, nil, false)
+	if err != nil {
+		return httpStatusCode, err
+	}
+	return httpStatusCode, nil
+}
+
+func (p *projectService) purge(ctx context.Context, name string) (int, error) {
+	u := fmt.Sprintf("%sprojects/%s/removed", defaultPathPrefix, name)
 
 	req, err := p.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -67,7 +83,7 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 }
 
 func (p *projectService) unremove(ctx context.Context, name string) (*Project, int, error) {
-	u := defaultPathPrefix + "projects/" + name
+	u := fmt.Sprintf("%sprojects/%s", defaultPathPrefix, name)
 
 	req, err := p.client.newRequest(http.MethodPatch, u, `[{"op":"replace", "path":"/status", "value":"active"}]`)
 	if err != nil {

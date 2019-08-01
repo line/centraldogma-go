@@ -24,11 +24,11 @@ type repositoryService service
 
 // Repository represents a repository in the Central Dogma server.
 type Repository struct {
-	Name         string  `json:"name"`
-	Creator      Author  `json:"creator,omitempty"`
-	HeadRevision int     `json:"headRevision,omitempty"`
-	URL          string  `json:"url,omitempty"`
-	CreatedAt    string  `json:"createdAt,omitempty"`
+	Name         string `json:"name"`
+	Creator      Author `json:"creator,omitempty"`
+	HeadRevision int    `json:"headRevision,omitempty"`
+	URL          string `json:"url,omitempty"`
+	CreatedAt    string `json:"createdAt,omitempty"`
 }
 
 func (r *repositoryService) create(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
@@ -51,6 +51,21 @@ func (r *repositoryService) create(ctx context.Context, projectName, repoName st
 
 func (r *repositoryService) remove(ctx context.Context, projectName, repoName string) (int, error) {
 	u := fmt.Sprintf("%vprojects/%v/repos/%v", defaultPathPrefix, projectName, repoName)
+
+	req, err := r.client.newRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
+
+	httpStatusCode, err := r.client.do(ctx, req, nil, false)
+	if err != nil {
+		return httpStatusCode, err
+	}
+	return httpStatusCode, nil
+}
+
+func (r *repositoryService) purge(ctx context.Context, projectName, repoName string) (int, error) {
+	u := fmt.Sprintf("%vprojects/%v/repos/%v/removed", defaultPathPrefix, projectName, repoName)
 
 	req, err := r.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {

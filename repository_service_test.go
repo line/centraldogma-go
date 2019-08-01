@@ -65,6 +65,19 @@ func TestRemoveRepository(t *testing.T) {
 	testStatusCode(t, httpStatusCode, 204)
 }
 
+func TestPurgeRepository(t *testing.T) {
+	c, mux, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/api/v1/projects/foo/repos/bar/removed", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, http.MethodDelete)
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	httpStatusCode, _ := c.PurgeRepository(context.Background(), "foo", "bar")
+	testStatusCode(t, httpStatusCode, 204)
+}
+
 func TestUnremoveRepository(t *testing.T) {
 	c, mux, teardown := setup()
 	defer teardown()

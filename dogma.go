@@ -362,6 +362,11 @@ func (c *Client) RemoveProject(ctx context.Context, name string) (httpStatusCode
 	return c.project.remove(ctx, name)
 }
 
+// PurgeProject purges a project which was removed before.
+func (c *Client) PurgeProject(ctx context.Context, name string) (httpStatusCode int, err error) {
+	return c.project.purge(ctx, name)
+}
+
 // UnremoveProject unremoves a removed project.
 func (c *Client) UnremoveProject(ctx context.Context, name string) (pro *Project, httpStatusCode int, err error) {
 	return c.project.unremove(ctx, name)
@@ -386,6 +391,11 @@ func (c *Client) CreateRepository(
 // RemoveRepository removes a repository. A removed repository can be unremoved using UnremoveRepository.
 func (c *Client) RemoveRepository(ctx context.Context, projectName, repoName string) (httpStatusCode int, err error) {
 	return c.repository.remove(ctx, projectName, repoName)
+}
+
+// PurgeRepository purges a repository which was removed before.
+func (c *Client) PurgeRepository(ctx context.Context, projectName, repoName string) (httpStatusCode int, err error) {
+	return c.repository.purge(ctx, projectName, repoName)
 }
 
 // UnremoveRepository unremoves a repository.
