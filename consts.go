@@ -27,3 +27,14 @@ const (
 
 	DefaultClientName = "centralDogmaClient"
 )
+
+const (
+	urlPartProjects = "projects"
+	urlPartRepos    = "repos"
+	urlPartContents = "contents"
+	urlPartCommits  = "commits"
+
+	urlPartActionList    = "list"
+	urlPartActionCompare = "compare"
+	urlPartActionRemoved = "removed"
+)

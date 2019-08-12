@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -50,19 +51,23 @@ func (ws *watchService) watchFile(
 		return &WatchResult{Err: ErrQueryMustBeSet}
 	}
 
-	// Normalize query path when it does not start with "/".
-	if len(query.Path) != 0 && !strings.HasPrefix(query.Path, "/") {
-		query.Path = "/" + query.Path
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+		urlPartContents, query.Path,
+	))
+	if err != nil {
+		return &WatchResult{Err: err}
 	}
 
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, query.Path)
-	v := &url.Values{}
-	if query.Type == JSONPath {
-		if err := setJSONPaths(v, query.Path, query.Expressions); err != nil {
-			return &WatchResult{Err: err}
-		}
+	// build query params
+	q := u.Query()
+	if err := setJSONPaths(&q, query); err != nil {
+		return &WatchResult{Err: err}
 	}
-	u += encodeValues(v)
+	u.RawQuery = q.Encode()
 
 	return ws.watchRequest(ctx, u, lastKnownRevision, timeout)
 }
@@ -83,14 +88,23 @@ func (ws *watchService) watchRepo(
 		pathPattern = "/**/" + pathPattern
 	}
 
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, pathPattern)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+		urlPartContents, pathPattern,
+	))
+	if err != nil {
+		return &WatchResult{Err: err}
+	}
 
 	return ws.watchRequest(ctx, u, lastKnownRevision, timeout)
 }
 
 func (ws *watchService) watchRequest(
 	ctx context.Context,
-	u, lastKnownRevision string,
+	u *url.URL, lastKnownRevision string,
 	timeout time.Duration,
 ) *WatchResult {
 

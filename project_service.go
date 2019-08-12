@@ -16,8 +16,9 @@ package centraldogma
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 )
 
 type projectService service
@@ -36,7 +37,14 @@ type Author struct {
 }
 
 func (p *projectService) create(ctx context.Context, name string) (*Project, int, error) {
-	u := defaultPathPrefix + "projects"
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	body := map[string]string{"name": name}
 	req, err := p.client.newRequest(http.MethodPost, u, body)
@@ -53,7 +61,14 @@ func (p *projectService) create(ctx context.Context, name string) (*Project, int
 }
 
 func (p *projectService) remove(ctx context.Context, name string) (int, error) {
-	u := fmt.Sprintf("%sprojects/%s", defaultPathPrefix, name)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, name,
+	))
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
 
 	req, err := p.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -68,7 +83,15 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 }
 
 func (p *projectService) purge(ctx context.Context, name string) (int, error) {
-	u := fmt.Sprintf("%sprojects/%s/removed", defaultPathPrefix, name)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, name,
+		urlPartActionRemoved,
+	))
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
 
 	req, err := p.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -83,7 +106,14 @@ func (p *projectService) purge(ctx context.Context, name string) (int, error) {
 }
 
 func (p *projectService) unremove(ctx context.Context, name string) (*Project, int, error) {
-	u := fmt.Sprintf("%sprojects/%s", defaultPathPrefix, name)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, name,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	req, err := p.client.newRequest(http.MethodPatch, u, `[{"op":"replace", "path":"/status", "value":"active"}]`)
 	if err != nil {
@@ -99,7 +129,14 @@ func (p *projectService) unremove(ctx context.Context, name string) (*Project, i
 }
 
 func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
-	u := defaultPathPrefix + "projects"
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	req, err := p.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -115,7 +152,19 @@ func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
 }
 
 func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, error) {
-	u := defaultPathPrefix + "projects?status=removed"
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
+
+	// build query params
+	q := u.Query()
+	q.Set("status", "removed")
+	u.RawQuery = q.Encode()
 
 	req, err := p.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {

@@ -16,8 +16,9 @@ package centraldogma
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 )
 
 type repositoryService service
@@ -32,7 +33,15 @@ type Repository struct {
 }
 
 func (r *repositoryService) create(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos", defaultPathPrefix, projectName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	body := map[string]string{"name": repoName}
 	req, err := r.client.newRequest(http.MethodPost, u, body)
@@ -50,7 +59,15 @@ func (r *repositoryService) create(ctx context.Context, projectName, repoName st
 }
 
 func (r *repositoryService) remove(ctx context.Context, projectName, repoName string) (int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v", defaultPathPrefix, projectName, repoName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+	))
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
 
 	req, err := r.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -65,7 +82,16 @@ func (r *repositoryService) remove(ctx context.Context, projectName, repoName st
 }
 
 func (r *repositoryService) purge(ctx context.Context, projectName, repoName string) (int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/removed", defaultPathPrefix, projectName, repoName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+		urlPartActionRemoved,
+	))
+	if err != nil {
+		return UnknownHttpStatusCode, err
+	}
 
 	req, err := r.client.newRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -80,7 +106,15 @@ func (r *repositoryService) purge(ctx context.Context, projectName, repoName str
 }
 
 func (r *repositoryService) unremove(ctx context.Context, projectName, repoName string) (*Repository, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v", defaultPathPrefix, projectName, repoName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	req, err := r.client.newRequest(http.MethodPatch, u, `[{"op":"replace", "path":"/status", "value":"active"}]`)
 	if err != nil {
@@ -96,7 +130,15 @@ func (r *repositoryService) unremove(ctx context.Context, projectName, repoName 
 }
 
 func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Repository, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos", defaultPathPrefix, projectName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -112,7 +154,20 @@ func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Re
 }
 
 func (r *repositoryService) listRemoved(ctx context.Context, projectName string) ([]*Repository, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos?status=removed", defaultPathPrefix, projectName)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
+
+	// build query params
+	q := u.Query()
+	q.Set("status", "removed")
+	u.RawQuery = q.Encode()
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -129,7 +184,16 @@ func (r *repositoryService) listRemoved(ctx context.Context, projectName string)
 
 func (r *repositoryService) normalizeRevision(
 	ctx context.Context, projectName, repoName, revision string) (int, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/revision/%v", defaultPathPrefix, projectName, repoName, revision)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		urlPartProjects, projectName,
+		urlPartRepos, repoName,
+		"revision", revision,
+	))
+	if err != nil {
+		return -1, UnknownHttpStatusCode, err
+	}
 
 	req, err := r.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {

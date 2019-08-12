@@ -13,7 +13,7 @@
 // under the License.
 
 /*
-Package 'centraldogma' provides a Go client for accessing Central Dogma.
+Package centraldogma provides a Go client for accessing Central Dogma.
 Visit https://line.github.io/centraldogma/ to learn more about Central Dogma.
 
 Usage:
@@ -205,7 +205,13 @@ func normalizeURL(baseURL string) (*url.URL, error) {
 
 // SecurityEnabled returns whether the security of the server is enabled or not.
 func (c *Client) SecurityEnabled() (bool, error) {
-	req, err := c.newRequest(http.MethodGet, pathSecurityEnabled, nil)
+	// build relative url
+	u, err := url.Parse(pathSecurityEnabled)
+	if err != nil {
+		return false, err
+	}
+
+	req, err := c.newRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return false, err
 	}
@@ -222,11 +228,9 @@ func (c *Client) SecurityEnabled() (bool, error) {
 	return true, nil
 }
 
-func (c *Client) newRequest(method, urlStr string, body interface{}) (*http.Request, error) {
-	u, err := c.baseURL.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
+func (c *Client) newRequest(method string, url *url.URL, body interface{}) (*http.Request, error) {
+	// resolves a URI reference to an absolute URI from base URI
+	u := c.baseURL.ResolveReference(url)
 
 	var buf io.ReadWriter
 	if body != nil {
