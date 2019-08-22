@@ -276,7 +276,7 @@ func drainupAndCloseResponseBody(body io.ReadCloser) {
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.Copy(ioutil.Discard, body)
+		_, _ = io.Copy(ioutil.Discard, body)
 
 		// close body
 		body.Close()
@@ -508,7 +508,7 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 	// setup watching channel
 	ch := make(chan WatchResult, DefaultChannelBuffer)
 	result = ch
-	w.Watch(func(value WatchResult) {
+	_ = w.Watch(func(value WatchResult) {
 		ch <- value
 	})
 

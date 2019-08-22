@@ -71,9 +71,7 @@ func random(bound int64) int64 {
 		// power of two
 		result &= mask
 	} else { // reject over-represented candidates
-		var u int64
-		u = result >> 1
-		for ; u+mask-result < 0; u = rand.Int63() >> 1 {
+		for u := result >> 1; u+mask-result < 0; u = rand.Int63() >> 1 {
 			result = u % bound
 		}
 	}

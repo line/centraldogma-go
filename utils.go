@@ -21,64 +21,53 @@ import (
 	"strings"
 )
 
-func setFromTo(v *url.Values, from, to string) {
-	if len(from) != 0 {
-		v.Set("from", from)
+func setURLValue(v *url.Values, key, value string) {
+	if len(value) > 0 {
+		v.Set(key, value)
 	}
+}
 
-	if len(to) != 0 {
-		v.Set("to", to)
-	}
+func setFromTo(v *url.Values, from, to string) {
+	setURLValue(v, "from", from)
+	setURLValue(v, "to", to)
 }
 
 func setRevision(v *url.Values, revision string) {
-	if len(revision) != 0 {
-		v.Set("revision", revision)
-	}
+	setURLValue(v, "revision", revision)
 }
 
 func setPath(v *url.Values, path string) {
-	if len(path) != 0 {
-		v.Set("path", path)
-	}
+	setURLValue(v, "path", path)
 }
 
 func setPathPattern(v *url.Values, pathPattern string) {
-	if len(pathPattern) != 0 {
-		v.Set("pathPattern", pathPattern)
-	}
+	setURLValue(v, "pathPattern", pathPattern)
 }
 
 func setMaxCommits(v *url.Values, maxCommits int) {
 	if maxCommits != 0 {
-		v.Set("maxCommits", strconv.Itoa(maxCommits))
+		setURLValue(v, "maxCommits", strconv.Itoa(maxCommits))
 	}
 }
 
 // currently only supports JSON path.
 func getFileURLValues(v *url.Values, revision string, query *Query) (err error) {
-	if err = setJSONPaths(v, query); err != nil {
-		return
-	}
-
-	if len(revision) != 0 {
+	if err = setJSONPaths(v, query); err == nil {
 		// have both of the jsonPath and the revision
-		v.Set("revision", revision)
+		setRevision(v, revision)
 	}
-
 	return
 }
 
-func setJSONPaths(v *url.Values, query *Query) error {
+func setJSONPaths(v *url.Values, query *Query) (err error) {
 	if query.Type == JSONPath {
 		if !strings.HasSuffix(strings.ToLower(query.Path), "json") {
-			return fmt.Errorf("the extension of the file should be .json (path: %v)", query.Path)
-		}
-
-		for _, jsonPath := range query.Expressions {
-			v.Add("jsonpath", jsonPath)
+			err = fmt.Errorf("the extension of the file should be .json (path: %v)", query.Path)
+		} else {
+			for _, jsonPath := range query.Expressions {
+				v.Add("jsonpath", jsonPath)
+			}
 		}
 	}
-
-	return nil
+	return
 }
