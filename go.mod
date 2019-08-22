@@ -1,7 +1,5 @@
 module go.linecorp.com/centraldogma
 
-go 1.12
-
 require (
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
