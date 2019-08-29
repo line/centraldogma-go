@@ -69,10 +69,15 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 				repo.projName, repo.repoName, repo.path, revision)
 			content := ""
 			if strings.HasSuffix(strings.ToLower(repo.path), ".json") {
-				b, err := marshalIndent(watchResult.Entry.Content)
-				if err != nil {
-					fmt.Printf("Failed to print the content: %v", string(watchResult.Entry.Content))
-					return
+				var b []byte
+				if isJSON(watchResult.Entry.Content) {
+					b, err = marshalIndent(watchResult.Entry.Content)
+					if err != nil {
+						fmt.Printf("Failed to print the content: %v", string(watchResult.Entry.Content))
+						return
+					}
+				} else {
+					b = watchResult.Entry.Content
 				}
 				content = string(b)
 			} else {
@@ -88,7 +93,10 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 	}
 
 	// start watching
-	fw.Watch(listener)
+	err = fw.Watch(listener)
+	if err != nil {
+		return err
+	}
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)

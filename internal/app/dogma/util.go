@@ -225,11 +225,15 @@ func putIntoTempFile(entry *centraldogma.Entry) (string, error) {
 	}
 	defer fd.Close()
 	if entry.Type == centraldogma.JSON {
-		b, err := marshalIndent(entry.Content)
-		if err != nil {
-			return "", err
+		var b []byte
+		if isJSON(entry.Content) {
+			b, err = marshalIndent(entry.Content)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			b = entry.Content
 		}
-
 		if _, err := fd.Write(b); err != nil {
 			return "", err
 		}
@@ -271,6 +275,11 @@ func newUpsertChangeFromFile(fileName, repositoryPath string) (*centraldogma.Cha
 		change.Type = centraldogma.UpsertText
 	}
 	return change, nil
+}
+
+func isJSON(b []byte) bool {
+	var holder map[string]interface{}
+	return json.Unmarshal(b, &holder) == nil
 }
 
 func marshalIndentObject(data interface{}) ([]byte, error) {
