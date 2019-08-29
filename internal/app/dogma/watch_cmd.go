@@ -69,17 +69,7 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 				repo.projName, repo.repoName, repo.path, revision)
 			content := ""
 			if strings.HasSuffix(strings.ToLower(repo.path), ".json") {
-				var b []byte
-				if isJSON(watchResult.Entry.Content) {
-					b, err = marshalIndent(watchResult.Entry.Content)
-					if err != nil {
-						fmt.Printf("Failed to print the content: %v", string(watchResult.Entry.Content))
-						return
-					}
-				} else {
-					b = watchResult.Entry.Content
-				}
-				content = string(b)
+				content = string(safeMarshalIndent(watchResult.Entry.Content))
 			} else {
 				content = string(watchResult.Entry.Content)
 			}

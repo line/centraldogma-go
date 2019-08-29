@@ -225,15 +225,7 @@ func putIntoTempFile(entry *centraldogma.Entry) (string, error) {
 	}
 	defer fd.Close()
 	if entry.Type == centraldogma.JSON {
-		var b []byte
-		if isJSON(entry.Content) {
-			b, err = marshalIndent(entry.Content)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			b = entry.Content
-		}
+		b := safeMarshalIndent(entry.Content)
 		if _, err := fd.Write(b); err != nil {
 			return "", err
 		}
@@ -268,7 +260,10 @@ func newUpsertChangeFromFile(fileName, repositoryPath string) (*centraldogma.Cha
 			return nil, fmt.Errorf("not a valid JSON file: %s", fileName)
 		}
 		var temp interface{}
-		json.Unmarshal(buf, &temp)
+		err = json.Unmarshal(buf, &temp)
+		if err != nil {
+			return nil, err
+		}
 		change.Content = temp
 	} else {
 		change.Content = string(buf)
@@ -277,17 +272,20 @@ func newUpsertChangeFromFile(fileName, repositoryPath string) (*centraldogma.Cha
 	return change, nil
 }
 
-func isJSON(b []byte) bool {
-	var holder map[string]interface{}
-	return json.Unmarshal(b, &holder) == nil
-}
-
 func marshalIndentObject(data interface{}) ([]byte, error) {
 	return json.MarshalIndent(data, "", "  ")
 }
 
-func marshalIndent(src []byte) ([]byte, error) {
-	dst := new(bytes.Buffer)
-	err := json.Indent(dst, src, "", "  ")
-	return dst.Bytes(), err
+func safeMarshalIndent(src []byte) ([]byte) {
+	if isJSON(src) {
+		dst := new(bytes.Buffer)
+		_ = json.Indent(dst, src, "", "  ")
+		return dst.Bytes()
+	}
+	return src
+}
+
+func isJSON(b []byte) bool {
+	var holder map[string]interface{}
+	return json.Unmarshal(b, &holder) == nil
 }

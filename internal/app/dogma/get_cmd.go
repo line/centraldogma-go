@@ -49,15 +49,7 @@ func (gf *getFileCommand) execute(c *cli.Context) error {
 	defer fd.Close()
 
 	if entry.Type == centraldogma.JSON {
-		var b []byte
-		if isJSON(entry.Content) {
-			b, err = marshalIndent(entry.Content)
-			if err != nil {
-				return err
-			}
-		} else {
-			b = entry.Content
-		}
+		b := safeMarshalIndent(entry.Content)
 		if _, err = fd.Write(b); err != nil {
 			return err
 		}
@@ -88,15 +80,7 @@ func (cf *catFileCommand) execute(c *cli.Context) error {
 	}
 
 	if entry.Type == centraldogma.JSON {
-		var b []byte
-		if isJSON(entry.Content) {
-			b, err = marshalIndent(entry.Content)
-			if err != nil {
-				return err
-			}
-		} else {
-			b = entry.Content
-		}
+		b := safeMarshalIndent(entry.Content)
 		fmt.Printf("%s\n", string(b))
 	} else if entry.Type == centraldogma.Text { //
 		fmt.Printf("%s\n", string(entry.Content))
