@@ -277,15 +277,10 @@ func marshalIndentObject(data interface{}) ([]byte, error) {
 }
 
 func safeMarshalIndent(src []byte) ([]byte) {
-	if isJSON(src) {
+	if json.Valid(src) {
 		dst := new(bytes.Buffer)
 		_ = json.Indent(dst, src, "", "  ")
 		return dst.Bytes()
 	}
 	return src
-}
-
-func isJSON(b []byte) bool {
-	var holder map[string]interface{}
-	return json.Unmarshal(b, &holder) == nil
 }
