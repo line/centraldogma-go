@@ -40,7 +40,7 @@ func (p *projectService) create(ctx context.Context, name string) (*Project, int
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects,
+		projects,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -64,7 +64,7 @@ func (p *projectService) remove(ctx context.Context, name string) (int, error) {
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, name,
+		projects, name,
 	))
 	if err != nil {
 		return UnknownHttpStatusCode, err
@@ -86,8 +86,8 @@ func (p *projectService) purge(ctx context.Context, name string) (int, error) {
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, name,
-		urlPartActionRemoved,
+		projects, name,
+		actionRemoved,
 	))
 	if err != nil {
 		return UnknownHttpStatusCode, err
@@ -109,7 +109,7 @@ func (p *projectService) unremove(ctx context.Context, name string) (*Project, i
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, name,
+		projects, name,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -132,7 +132,7 @@ func (p *projectService) list(ctx context.Context) ([]*Project, int, error) {
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects,
+		projects,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -155,7 +155,7 @@ func (p *projectService) listRemoved(ctx context.Context) ([]*Project, int, erro
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects,
+		projects,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err

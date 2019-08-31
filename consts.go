@@ -29,12 +29,12 @@ const (
 )
 
 const (
-	urlPartProjects = "projects"
-	urlPartRepos    = "repos"
-	urlPartContents = "contents"
-	urlPartCommits  = "commits"
+	projects = "projects"
+	repos    = "repos"
+	contents = "contents"
+	commits  = "commits"
 
-	urlPartActionList    = "list"
-	urlPartActionCompare = "compare"
-	urlPartActionRemoved = "removed"
+	actionList    = "list"
+	actionCompare = "compare"
+	actionRemoved = "removed"
 )

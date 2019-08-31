@@ -36,8 +36,8 @@ func (r *repositoryService) create(ctx context.Context, projectName, repoName st
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos,
+		projects, projectName,
+		repos,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -62,8 +62,8 @@ func (r *repositoryService) remove(ctx context.Context, projectName, repoName st
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
+		projects, projectName,
+		repos, repoName,
 	))
 	if err != nil {
 		return UnknownHttpStatusCode, err
@@ -85,9 +85,9 @@ func (r *repositoryService) purge(ctx context.Context, projectName, repoName str
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartActionRemoved,
+		projects, projectName,
+		repos, repoName,
+		actionRemoved,
 	))
 	if err != nil {
 		return UnknownHttpStatusCode, err
@@ -109,8 +109,8 @@ func (r *repositoryService) unremove(ctx context.Context, projectName, repoName 
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
+		projects, projectName,
+		repos, repoName,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -133,8 +133,8 @@ func (r *repositoryService) list(ctx context.Context, projectName string) ([]*Re
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos,
+		projects, projectName,
+		repos,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -157,8 +157,8 @@ func (r *repositoryService) listRemoved(ctx context.Context, projectName string)
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos,
+		projects, projectName,
+		repos,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -187,8 +187,8 @@ func (r *repositoryService) normalizeRevision(
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
+		projects, projectName,
+		repos, repoName,
 		"revision", revision,
 	))
 	if err != nil {

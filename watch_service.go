@@ -54,9 +54,9 @@ func (ws *watchService) watchFile(
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartContents, query.Path,
+		projects, projectName,
+		repos, repoName,
+		contents, query.Path,
 	))
 	if err != nil {
 		return &WatchResult{Err: err}
@@ -91,9 +91,9 @@ func (ws *watchService) watchRepo(
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartContents, pathPattern,
+		projects, projectName,
+		repos, repoName,
+		contents, pathPattern,
 	))
 	if err != nil {
 		return &WatchResult{Err: err}

@@ -162,9 +162,9 @@ func (con *contentService) listFiles(ctx context.Context,
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartActionList, pathPattern,
+		projects, projectName,
+		repos, repoName,
+		actionList, pathPattern,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -197,9 +197,9 @@ func (con *contentService) getFile(
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartContents, query.Path,
+		projects, projectName,
+		repos, repoName,
+		contents, query.Path,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -236,9 +236,9 @@ func (con *contentService) getFiles(ctx context.Context,
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartContents, pathPattern,
+		projects, projectName,
+		repos, repoName,
+		contents, pathPattern,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -268,9 +268,9 @@ func (con *contentService) getHistory(ctx context.Context,
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartCommits, from,
+		projects, projectName,
+		repos, repoName,
+		commits, from,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -310,9 +310,9 @@ func (con *contentService) getDiff(ctx context.Context,
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartActionCompare,
+		projects, projectName,
+		repos, repoName,
+		actionCompare,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -352,9 +352,9 @@ func (con *contentService) getDiffs(ctx context.Context,
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartActionCompare,
+		projects, projectName,
+		repos, repoName,
+		actionCompare,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -398,9 +398,9 @@ func (con *contentService) push(ctx context.Context, projectName, repoName, base
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
-		urlPartProjects, projectName,
-		urlPartRepos, repoName,
-		urlPartContents,
+		projects, projectName,
+		repos, repoName,
+		contents,
 	))
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
