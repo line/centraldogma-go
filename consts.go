@@ -27,3 +27,14 @@ const (
 
 	DefaultClientName = "centralDogmaClient"
 )
+
+const (
+	projects = "projects"
+	repos    = "repos"
+	contents = "contents"
+	commits  = "commits"
+
+	actionList    = "list"
+	actionCompare = "compare"
+	actionRemoved = "removed"
+)

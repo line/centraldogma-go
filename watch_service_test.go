@@ -247,8 +247,7 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 	go func() {
 		latest := fw.AwaitInitialValue()
 		if latest == nil {
-			t.Errorf("latest from AwaitInitialValue is not valid")
-			t.FailNow()
+			panic("latest from AwaitInitialValue is not valid")
 		}
 
 		want := 3

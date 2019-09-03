@@ -13,7 +13,7 @@
 // under the License.
 
 /*
-Package 'centraldogma' provides a Go client for accessing Central Dogma.
+Package centraldogma provides a Go client for accessing Central Dogma.
 Visit https://line.github.io/centraldogma/ to learn more about Central Dogma.
 
 Usage:
@@ -205,7 +205,13 @@ func normalizeURL(baseURL string) (*url.URL, error) {
 
 // SecurityEnabled returns whether the security of the server is enabled or not.
 func (c *Client) SecurityEnabled() (bool, error) {
-	req, err := c.newRequest(http.MethodGet, pathSecurityEnabled, nil)
+	// build relative url
+	u, err := url.Parse(pathSecurityEnabled)
+	if err != nil {
+		return false, err
+	}
+
+	req, err := c.newRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return false, err
 	}
@@ -222,11 +228,9 @@ func (c *Client) SecurityEnabled() (bool, error) {
 	return true, nil
 }
 
-func (c *Client) newRequest(method, urlStr string, body interface{}) (*http.Request, error) {
-	u, err := c.baseURL.Parse(urlStr)
-	if err != nil {
-		return nil, err
-	}
+func (c *Client) newRequest(method string, url *url.URL, body interface{}) (*http.Request, error) {
+	// resolves a URI reference to an absolute URI from base URI
+	u := c.baseURL.ResolveReference(url)
 
 	var buf io.ReadWriter
 	if body != nil {
@@ -272,7 +276,7 @@ func drainupAndCloseResponseBody(body io.ReadCloser) {
 		// see also:
 		// - https://github.com/google/go-github/pull/317
 		// - https://forum.golangbridge.org/t/do-i-need-to-read-the-body-before-close-it/5594/4
-		io.Copy(ioutil.Discard, body)
+		_, _ = io.Copy(ioutil.Discard, body)
 
 		// close body
 		body.Close()
@@ -504,7 +508,7 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 	// setup watching channel
 	ch := make(chan WatchResult, DefaultChannelBuffer)
 	result = ch
-	w.Watch(func(value WatchResult) {
+	_ = w.Watch(func(value WatchResult) {
 		ch <- value
 	})
 

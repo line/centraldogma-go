@@ -1,4 +1,4 @@
-// Copyright 2018 LINE Corporation
+// Copyright 2019 LINE Corporation
 //
 // LINE Corporation licenses this file to you under the Apache License,
 // version 2.0 (the "License"); you may not use this file except in compliance
@@ -15,8 +15,12 @@
 package centraldogma
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,6 +34,57 @@ const (
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
+}
+
+func setURLValue(v *url.Values, key, value string) {
+	if len(value) > 0 {
+		v.Set(key, value)
+	}
+}
+
+func setFromTo(v *url.Values, from, to string) {
+	setURLValue(v, "from", from)
+	setURLValue(v, "to", to)
+}
+
+func setRevision(v *url.Values, revision string) {
+	setURLValue(v, "revision", revision)
+}
+
+func setPath(v *url.Values, path string) {
+	setURLValue(v, "path", path)
+}
+
+func setPathPattern(v *url.Values, pathPattern string) {
+	setURLValue(v, "pathPattern", pathPattern)
+}
+
+func setMaxCommits(v *url.Values, maxCommits int) {
+	if maxCommits != 0 {
+		setURLValue(v, "maxCommits", strconv.Itoa(maxCommits))
+	}
+}
+
+// currently only supports JSON path.
+func getFileURLValues(v *url.Values, revision string, query *Query) (err error) {
+	if err = setJSONPaths(v, query); err == nil {
+		// have both of the jsonPath and the revision
+		setRevision(v, revision)
+	}
+	return
+}
+
+func setJSONPaths(v *url.Values, query *Query) (err error) {
+	if query.Type == JSONPath {
+		if !strings.HasSuffix(strings.ToLower(query.Path), "json") {
+			err = fmt.Errorf("the extension of the file should be .json (path: %v)", query.Path)
+		} else {
+			for _, jsonPath := range query.Expressions {
+				v.Add("jsonpath", jsonPath)
+			}
+		}
+	}
+	return
 }
 
 func nextDelay(numAttemptsSoFar int) time.Duration {
@@ -71,9 +126,7 @@ func random(bound int64) int64 {
 		// power of two
 		result &= mask
 	} else { // reject over-represented candidates
-		var u int64
-		u = result >> 1
-		for ; u+mask-result < 0; u = rand.Int63() >> 1 {
+		for u := result >> 1; u+mask-result < 0; u = rand.Int63() >> 1 {
 			result = u % bound
 		}
 	}

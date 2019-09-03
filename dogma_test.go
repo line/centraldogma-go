@@ -205,7 +205,9 @@ func TestNewClientWithToken_h2(t *testing.T) {
 	hello := &helloArmeria{}
 
 	defer res.Body.Close()
-	json.NewDecoder(res.Body).Decode(hello)
+	if err := json.NewDecoder(res.Body).Decode(hello); err != nil {
+		t.Fatal(err)
+	}
 	testString(t, hello.Hello, "Armeria", "hello")
 }
 

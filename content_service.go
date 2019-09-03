@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
+	"path"
 	"strings"
 )
 
@@ -159,13 +159,22 @@ func (con *contentService) listFiles(ctx context.Context,
 		pathPattern = "/**/" + pathPattern
 	}
 
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/list%v", defaultPathPrefix, projectName, repoName, pathPattern)
-
-	if len(revision) != 0 {
-		v := &url.Values{}
-		v.Set("revision", revision)
-		u += encodeValues(v)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		actionList, pathPattern,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
+
+	// build query params
+	q := u.Query()
+	setRevision(&q, revision)
+	u.RawQuery = q.Encode()
+
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, UnknownHttpStatusCode, err
@@ -179,31 +188,29 @@ func (con *contentService) listFiles(ctx context.Context,
 	return entries, httpStatusCode, nil
 }
 
-func encodeValues(v *url.Values) string {
-	if encoded := v.Encode(); len(encoded) != 0 {
-		return "?" + encoded
-	}
-	return ""
-}
-
 func (con *contentService) getFile(
 	ctx context.Context, projectName, repoName, revision string, query *Query) (*Entry, int, error) {
 	if query == nil {
 		return nil, UnknownHttpStatusCode, errors.New("query should not be nil")
 	}
 
-	path := query.Path
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, path)
-	v := &url.Values{}
-	if err := getFileURLValues(v, revision, path, query); err != nil {
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		contents, query.Path,
+	))
+	if err != nil {
 		return nil, UnknownHttpStatusCode, err
 	}
 
-	u += encodeValues(v)
+	// build query params
+	q := u.Query()
+	if err := getFileURLValues(&q, revision, query); err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
+	u.RawQuery = q.Encode()
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -219,44 +226,28 @@ func (con *contentService) getFile(
 	return entry, httpStatusCode, nil
 }
 
-// getFileURLValues currently only supports JSON path.
-func getFileURLValues(v *url.Values, revision, path string, query *Query) error {
-	if query.Type == JSONPath {
-		if err := setJSONPaths(v, path, query.Expressions); err != nil {
-			return err
-		}
-	}
-
-	if len(revision) != 0 {
-		// have both of the jsonPath and the revision
-		v.Set("revision", revision)
-	}
-	return nil
-}
-
-func setJSONPaths(v *url.Values, path string, jsonPaths []string) error {
-	if !strings.HasSuffix(strings.ToLower(path), "json") {
-		return fmt.Errorf("the extension of the file should be .json (path: %v)", path)
-	}
-	for _, jsonPath := range jsonPaths {
-		v.Add("jsonpath", jsonPath)
-	}
-	return nil
-}
-
 func (con *contentService) getFiles(ctx context.Context,
 	projectName, repoName, revision, pathPattern string) ([]*Entry, int, error) {
 	if len(pathPattern) != 0 && !strings.HasPrefix(pathPattern, "/") {
 		// Normalize the pathPattern when it does not start with "/" so that the pathPattern fits into the url.
 		pathPattern = "/**/" + pathPattern
 	}
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents%v", defaultPathPrefix, projectName, repoName, pathPattern)
 
-	if len(revision) != 0 {
-		v := &url.Values{}
-		v.Set("revision", revision)
-		u += encodeValues(v)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		contents, pathPattern,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
+
+	// build query params
+	q := u.Query()
+	setRevision(&q, revision)
+	u.RawQuery = q.Encode()
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -273,19 +264,24 @@ func (con *contentService) getFiles(ctx context.Context,
 
 func (con *contentService) getHistory(ctx context.Context,
 	projectName, repoName, from, to, pathPattern string, maxCommits int) ([]*Commit, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/commits/%v", defaultPathPrefix, projectName, repoName, from)
 
-	v := &url.Values{}
-	if len(pathPattern) != 0 {
-		v.Set("path", pathPattern)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		commits, from,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
-	if len(to) != 0 {
-		v.Set("to", to)
-	}
-	if maxCommits != 0 {
-		v.Set("maxCommits", strconv.Itoa(maxCommits))
-	}
-	u += encodeValues(v)
+
+	// build query params
+	q := u.Query()
+	setPath(&q, pathPattern)
+	setFromTo(&q, "", to)
+	setMaxCommits(&q, maxCommits)
+	u.RawQuery = q.Encode()
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -302,28 +298,34 @@ func (con *contentService) getHistory(ctx context.Context,
 
 func (con *contentService) getDiff(ctx context.Context,
 	projectName, repoName, from, to string, query *Query) (*Change, int, error) {
+
+	// validate query
 	if query == nil {
 		return nil, UnknownHttpStatusCode, errors.New("query should not be nil")
 	}
-
-	path := query.Path
-	if len(path) == 0 {
+	if len(query.Path) == 0 {
 		return nil, UnknownHttpStatusCode, errors.New("the path should not be empty")
 	}
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		actionCompare,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
 
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/compare", defaultPathPrefix, projectName, repoName)
-	v := &url.Values{}
-	v.Set("path", path)
-	if query != nil && query.Type == JSONPath {
-		if err := setJSONPaths(v, path, query.Expressions); err != nil {
-			return nil, UnknownHttpStatusCode, err
-		}
+	// build query params
+	q := u.Query()
+	setPath(&q, path.Join("/", query.Path))
+	if err := setJSONPaths(&q, query); err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
-	setFromTo(v, from, to)
-	u += encodeValues(v)
+	setFromTo(&q, from, to)
+	u.RawQuery = q.Encode()
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -339,27 +341,30 @@ func (con *contentService) getDiff(ctx context.Context,
 	return change, httpStatusCode, nil
 }
 
-func setFromTo(v *url.Values, from, to string) {
-	if len(from) != 0 {
-		v.Set("from", from)
-	}
-
-	if len(to) != 0 {
-		v.Set("to", to)
-	}
-}
-
 func (con *contentService) getDiffs(ctx context.Context,
 	projectName, repoName, from, to, pathPattern string) ([]*Change, int, error) {
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/compare", defaultPathPrefix, projectName, repoName)
-	v := &url.Values{}
 
+	// validate path pattern
 	if len(pathPattern) == 0 {
 		pathPattern = "/**"
 	}
-	v.Set("pathPattern", pathPattern)
-	setFromTo(v, from, to)
-	u += encodeValues(v)
+
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		actionCompare,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
+	}
+
+	// build query params
+	q := u.Query()
+	setPathPattern(&q, pathPattern)
+	setFromTo(&q, from, to)
+	u.RawQuery = q.Encode()
 
 	req, err := con.client.newRequest(http.MethodGet, u, nil)
 	if err != nil {
@@ -390,11 +395,21 @@ func (con *contentService) push(ctx context.Context, projectName, repoName, base
 		return nil, UnknownHttpStatusCode, errors.New("no changes to commit")
 	}
 
-	u := fmt.Sprintf("%vprojects/%v/repos/%v/contents", defaultPathPrefix, projectName, repoName)
-
-	if len(baseRevision) != 0 {
-		u += fmt.Sprintf("?revision=%v", baseRevision)
+	// build relative url
+	u, err := url.Parse(path.Join(
+		defaultPathPrefix,
+		projects, projectName,
+		repos, repoName,
+		contents,
+	))
+	if err != nil {
+		return nil, UnknownHttpStatusCode, err
 	}
+
+	// build query params
+	q := u.Query()
+	setRevision(&q, baseRevision)
+	u.RawQuery = q.Encode()
 
 	body := push{CommitMessage: commitMessage, Changes: changes}
 
