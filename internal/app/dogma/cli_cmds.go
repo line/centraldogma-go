@@ -55,6 +55,11 @@ var streamingFlag = cli.BoolFlag{
 	Usage: "Specifies whether to keep watching the file",
 }
 
+var listenerFlag = cli.StringFlag{
+	Name:  "listener, l",
+	Usage: "Specifies the executable path that handles watch events",
+}
+
 var printFormatFlags = []cli.Flag{
 	cli.BoolFlag{
 		Name:   "pretty",
@@ -226,7 +231,7 @@ func CLICommands() []cli.Command {
 			Name:      "watch",
 			Usage:     "Watches a file in the path",
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
-			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag},
+			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag, listenerFlag},
 			Action: func(c *cli.Context) error {
 				command, err := newWatchCommand(c)
 				if err != nil {
