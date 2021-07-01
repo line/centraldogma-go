@@ -53,6 +53,7 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 
 	// prepare context
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	done := make(chan struct{}, 2)
 	notifyDone := func() {
@@ -104,9 +105,6 @@ func (wc *watchCommand) execute(c *cli.Context) error {
 
 	// wait until notified to done channel
 	<-done
-
-	// cancel context and leave
-	cancel()
 
 	return nil
 }
