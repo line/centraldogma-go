@@ -30,10 +30,10 @@ import (
 )
 
 type watchCommand struct {
-	repo      repositoryRequestInfo
-	jsonPaths []string
-	streaming bool
-	listener  string
+	repo         repositoryRequestInfo
+	jsonPaths    []string
+	streaming    bool
+	listenerFile string
 }
 
 type listenerExecError struct {
@@ -60,7 +60,7 @@ func (wc *watchCommand) defaultListener(watchResult dogma.WatchResult) error {
 }
 
 func (wc *watchCommand) commandExecutionListener(watchResult dogma.WatchResult) error {
-	command := exec.Command(wc.listener)
+	command := exec.Command(wc.listenerFile)
 	command.Env = append(os.Environ(),
 		"DOGMA_WATCH_EVENT_PATH="+watchResult.Entry.Path,
 		"DOGMA_WATCH_EVENT_CONTENT_TYPE="+watchResult.Entry.Type.String(),
@@ -71,7 +71,7 @@ func (wc *watchCommand) commandExecutionListener(watchResult dogma.WatchResult) 
 	command.Stderr = os.Stderr
 	err := command.Run()
 	if err != nil {
-		return &listenerExecError{underlying: err, command: wc.listener}
+		return &listenerExecError{underlying: err, command: wc.listenerFile}
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (wc *watchCommand) executeWithDogmaClient(c *cli.Context, client *dogma.Cli
 
 	listener := wc.defaultListener
 
-	if wc.listener != "" {
+	if wc.listenerFile != "" {
 		listener = wc.commandExecutionListener
 	}
 
@@ -157,5 +157,5 @@ func newWatchCommand(c *cli.Context) (Command, error) {
 		return nil, err
 	}
 
-	return &watchCommand{repo: repo, jsonPaths: c.StringSlice("jsonpath"), streaming: c.Bool("streaming"), listener: c.String("listener")}, nil
+	return &watchCommand{repo: repo, jsonPaths: c.StringSlice("jsonpath"), streaming: c.Bool("streaming"), listenerFile: c.String("listener")}, nil
 }

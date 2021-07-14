@@ -92,7 +92,7 @@ func TestListenerOption(t *testing.T) {
 			path:      "/foo.json",
 			revision:  "-1",
 		},
-		listener: "cat",
+		listenerFile: "cat",
 	}
 
 	out := runCommandAndCaptureStdout(func() { wc.executeWithDogmaClient(nil, client) })
@@ -101,7 +101,7 @@ func TestListenerOption(t *testing.T) {
 		t.Errorf("Got output %s; want %s", string(out), string(entry.Content))
 	}
 
-	wc.listener = "env"
+	wc.listenerFile = "env"
 
 	out = runCommandAndCaptureStdout(func() { wc.executeWithDogmaClient(nil, client) })
 	env := string(out)
@@ -141,7 +141,7 @@ func TestInvalidListenerOption(t *testing.T) {
 			path:      "/foo.json",
 			revision:  "-1",
 		},
-		listener: "XYZ NO SUCH COMMAND",
+		listenerFile: "XYZ NO SUCH COMMAND",
 	}
 
 	err := wc.executeWithDogmaClient(nil, client)
