@@ -42,7 +42,6 @@ func mockedCentralDogmaServer(entry dogma.Entry) *httptest.Server {
 			"entry": {"revision": %[1]d, "path": "%s", "content": %s, "type": "%s", "url": "%s"}}`,
 				revision+1, entry.Path, string(entry.Content), entry.Type.String(), entry.URL)
 		}))
-	ts.EnableHTTP2 = true
 	ts.StartTLS()
 	return ts
 }
