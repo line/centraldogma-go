@@ -3,3 +3,6 @@ internal/app/dogma/dogma
 
 # GoLand
 .idea
+
+# Coverage output
+coverage.txt
