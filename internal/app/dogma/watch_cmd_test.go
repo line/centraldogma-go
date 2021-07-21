@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -63,6 +64,9 @@ func runCommandAndCaptureStdout(f func()) []byte {
 }
 
 func TestListenerOption(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows because there's no handy commands for testing")
+	}
 	if _, err := exec.LookPath("cat"); err != nil {
 		t.Skipf("skipping %s due to a lack of cat command", t.Name())
 
