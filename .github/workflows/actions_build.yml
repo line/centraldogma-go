@@ -1,11 +1,7 @@
 name: CI
 env:
   GO111MODULE: on
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+on: [push, pull_request]
 
 concurrency:
   # Cancel the previous builds in the same PR.
