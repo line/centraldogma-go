@@ -1,7 +1,11 @@
 name: CI
 env:
   GO111MODULE: on
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 concurrency:
   # Cancel the previous builds in the same PR.
@@ -13,7 +17,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.x]
+        go-version: [1.x, 1.12.x, 1.13.x, 1.14.x, 1.15.x]
         platform: [ubuntu-latest]
         include:
           # include windows, but only with the latest Go version, since there
@@ -45,6 +49,7 @@ jobs:
         run: diff -u <(echo -n) <(gofmt -d -s .)
 
       - name: Ensure go generate produces a zero diff
+        if: runner.os == 'Ubuntu' && ${{ matrix.go-version == '1.x' }}
         shell: bash
         run: go generate -x ./... && git diff --exit-code; code=$?; git checkout -- .; (exit $code)
 
