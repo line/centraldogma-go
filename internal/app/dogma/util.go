@@ -276,7 +276,7 @@ func marshalIndentObject(data interface{}) ([]byte, error) {
 	return json.MarshalIndent(data, "", "  ")
 }
 
-func safeMarshalIndent(src []byte) ([]byte) {
+func safeMarshalIndent(src []byte) []byte {
 	if json.Valid(src) {
 		dst := new(bytes.Buffer)
 		_ = json.Indent(dst, src, "", "  ")
