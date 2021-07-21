@@ -45,6 +45,7 @@ jobs:
         run: diff -u <(echo -n) <(gofmt -d -s .)
 
       - name: Ensure go generate produces a zero diff
+        if: ${{ matrix.go-version }} == '1.x'
         shell: bash
         run: go generate -x ./... && git diff --exit-code; code=$?; git checkout -- .; (exit $code)
 
