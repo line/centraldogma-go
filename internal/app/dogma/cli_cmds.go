@@ -242,9 +242,7 @@ func CLICommands() []cli.Command {
 
    e.g.
      # Print foo.json content when it gets updated
-     dogma watch --listener cat /pj/repo/foo.json
-
-   Please note that --listener option is not tested well on Windows.`,
+     dogma watch --listener cat /pj/repo/foo.json`,
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag, listenerFlag},
 			Action: func(c *cli.Context) error {

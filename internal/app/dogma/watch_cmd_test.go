@@ -22,7 +22,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -49,27 +48,33 @@ func mockedCentralDogmaServer(entry dogma.Entry) *httptest.Server {
 
 func runCommandAndCaptureStdout(f func()) []byte {
 	originalStdout := os.Stdout
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
 	os.Stdout = w
 	defer func() { os.Stdout = originalStdout }()
+
+	outChan := make(chan []byte)
+
+	go func() {
+		out, err := ioutil.ReadAll(r)
+		if err != nil {
+			panic(err)
+		}
+		outChan <- out
+	}()
 
 	f()
 
 	w.Close()
-	out, err := ioutil.ReadAll(r)
-	if err != nil {
-		panic(err)
-	}
-	return out
+
+	return <-outChan
 }
 
 func TestListenerOption(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows because there's no handy commands for testing")
-	}
 	if _, err := exec.LookPath("cat"); err != nil {
 		t.Skipf("skipping %s due to a lack of cat command", t.Name())
-
 	}
 	if _, err := exec.LookPath("env"); err != nil {
 		t.Skipf("skipping %s due to a lack of env command", t.Name())
