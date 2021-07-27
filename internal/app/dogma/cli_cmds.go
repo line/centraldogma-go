@@ -55,6 +55,11 @@ var streamingFlag = cli.BoolFlag{
 	Usage: "Specifies whether to keep watching the file",
 }
 
+var listenerFlag = cli.StringFlag{
+	Name:  "listener, l",
+	Usage: "Specifies the `executable` path that handles watch events",
+}
+
 var printFormatFlags = []cli.Flag{
 	cli.BoolFlag{
 		Name:   "pretty",
@@ -223,10 +228,23 @@ func CLICommands() []cli.Command {
 			},
 		},
 		{
-			Name:      "watch",
-			Usage:     "Watches a file in the path",
+			Name:  "watch",
+			Usage: "Watches a file in the path",
+			Description: `Watch events are printed to stdout by default.
+   You can customize this behavior by using --listener <executable> option.
+   The command you specified as <executable> can read updated content body through its STDIN.
+   Other meta data about the watch event are available via environment variables below.
+
+     DOGMA_WATCH_EVENT_PATH - The path to the file you're watching
+     DOGMA_WATCH_EVENT_CONTENT_TYPE - The content type of the file, JSON or TEXT
+     DOGMA_WATCH_EVENT_REV - The revision number of the watch event
+     DOGMA_WATCH_EVENT_URL - The URL of the target file
+
+   e.g.
+     # Print foo.json content when it gets updated
+     dogma watch --listener cat /pj/repo/foo.json`,
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
-			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag},
+			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag, listenerFlag},
 			Action: func(c *cli.Context) error {
 				command, err := newWatchCommand(c)
 				if err != nil {

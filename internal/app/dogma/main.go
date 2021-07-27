@@ -70,7 +70,9 @@ func main() {
 
 var commandHelpTemplate = `DESCRIPTION:
    {{if .Usage}}{{.Usage}}{{end}}
-
+   {{ if .Description}}
+   {{.Description}}
+   {{end }}
 USAGE:
    {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Category}}
 
