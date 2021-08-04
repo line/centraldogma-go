@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -32,7 +32,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/fhs/go-netrc/netrc"
 	"github.com/urfave/cli"
 	"go.linecorp.com/centraldogma"
 )
@@ -48,7 +47,7 @@ const (
 
 var tempFileName = "commit-message.txt"
 
-func getCommitMessage(c *cli.Context, filePath string, commitType commitType) (*centraldogma.CommitMessage, error) {
+func getCommitMessage(c *cli.Context, out io.Writer, filePath string, commitType commitType) (*centraldogma.CommitMessage, error) {
 	message := c.String("message")
 	if len(message) != 0 {
 		return &centraldogma.CommitMessage{Summary: message}, nil
@@ -64,7 +63,7 @@ func getCommitMessage(c *cli.Context, filePath string, commitType commitType) (*
 	tmpl, _ := template.New("").Parse(commitMessageTemplate)
 	tmpl.Execute(fd, typeWithFile{FilePath: filePath, CommitType: commitType})
 
-	cmd := cmdToOpenEditor(tempFilePath)
+	cmd := cmdToOpenEditor(out, tempFilePath)
 	if err = cmd.Start(); err != nil {
 		// Failed to launch the editor.
 		return messageFromCLI()
@@ -147,7 +146,7 @@ func getDetail(scanner *bufio.Scanner) string {
 		buf.WriteString("\n")
 	}
 	// remove trailing empty lines
-	regex, _ := regexp.Compile("\\n{2,}\\z")
+	regex, _ := regexp.Compile(`\n{2,}\z`)
 	return regex.ReplaceAllString(buf.String(), "")
 }
 
@@ -165,26 +164,11 @@ var commitMessageTemplate = `
 #
 `
 
-func netrcInfo(machineName string) *netrc.Machine {
-	if usr, err := user.Current(); err == nil {
-		netrcFilePath := usr.HomeDir + string(filepath.Separator)
-		if runtime.GOOS == "windows" {
-			netrcFilePath += "_netrc"
-		} else {
-			netrcFilePath += ".netrc"
-		}
-		if machine, err := netrc.FindMachine(netrcFilePath, machineName); err == nil {
-			return machine
-		}
-	}
-	return nil
-}
-
-func cmdToOpenEditor(filePath string) *exec.Cmd {
+func cmdToOpenEditor(out io.Writer, filePath string) *exec.Cmd {
 	editor := editor()
 	cmd := exec.Command(editor, filePath)
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = out
 	cmd.Stderr = os.Stderr
 	return cmd
 }
@@ -242,10 +226,10 @@ func putIntoTempFile(entry *centraldogma.Entry) (string, error) {
 func newUpsertChangeFromFile(fileName, repositoryPath string) (*centraldogma.Change, error) {
 	fileInfo, err := os.Stat(fileName)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("%s does not exist\n", fileName)
+		return nil, fmt.Errorf("%s does not exist", fileName)
 	}
 	if fileInfo.IsDir() {
-		return nil, fmt.Errorf("%s is a directory\n", fileName)
+		return nil, fmt.Errorf("%s is a directory", fileName)
 	}
 
 	change := &centraldogma.Change{Path: repositoryPath}

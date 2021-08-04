@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/urfave/cli"
@@ -24,6 +25,7 @@ import (
 
 // A diffCommand returns a diff of the specified path between the from revision and to revision.
 type diffCommand struct {
+	out   io.Writer
 	repo  repositoryRequestInfoWithFromTo
 	style PrintStyle
 }
@@ -50,7 +52,7 @@ func (d *diffCommand) execute(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s\n", data)
+		fmt.Fprintf(d.out, "%s\n", data)
 	}
 
 	return nil
@@ -58,7 +60,7 @@ func (d *diffCommand) execute(c *cli.Context) error {
 
 // newDiffCommand creates the diffCommand. If the from and to are not specified, from revision will be 1 and
 // to revision will be -1 respectively.
-func newDiffCommand(c *cli.Context, style PrintStyle) (Command, error) {
+func newDiffCommand(c *cli.Context, out io.Writer, style PrintStyle) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
@@ -77,5 +79,5 @@ func newDiffCommand(c *cli.Context, style PrintStyle) (Command, error) {
 	} else {
 		repoWithFromTo.to = "-1"
 	}
-	return &diffCommand{repo: repoWithFromTo, style: style}, nil
+	return &diffCommand{out: out, repo: repoWithFromTo, style: style}, nil
 }

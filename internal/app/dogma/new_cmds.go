@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -27,6 +28,7 @@ import (
 
 // A newProjectCommand creates a project with the specified project name on the remote Central Dogma server.
 type newProjectCommand struct {
+	out       io.Writer
 	remoteURL string
 	name      string
 }
@@ -45,13 +47,14 @@ func (np *newProjectCommand) execute(c *cli.Context) error {
 		return fmt.Errorf("failed to create %s (status: %d)", np.name, httpStatusCode)
 	}
 
-	fmt.Printf("Created: /%s\n", np.name)
+	fmt.Fprintf(np.out, "Created: /%s\n", np.name)
 	return nil
 }
 
 // A newRepositoryCommand creates a repository with the specified repository name under the project
 // on the remote Central Dogma server.
 type newRepositoryCommand struct {
+	out       io.Writer
 	remoteURL string
 	projName  string
 	repoName  string
@@ -70,11 +73,11 @@ func (nr *newRepositoryCommand) execute(c *cli.Context) error {
 	if httpStatusCode != http.StatusCreated {
 		return fmt.Errorf("failed to create %s (status: %d)", nr.repoName, httpStatusCode)
 	}
-	fmt.Printf("Created: /%s/%s\n", nr.projName, nr.repoName)
+	fmt.Fprintf(nr.out, "Created: /%s/%s\n", nr.projName, nr.repoName)
 	return nil
 }
 
-func newNewCommand(c *cli.Context) (Command, error) {
+func newNewCommand(c *cli.Context, out io.Writer) (Command, error) {
 	if len(c.Args()) != 1 {
 		return nil, newCommandLineError(c)
 	}
@@ -89,10 +92,10 @@ func newNewCommand(c *cli.Context) (Command, error) {
 	}
 
 	if len(split) == 1 {
-		return &newProjectCommand{remoteURL: remoteURL, name: split[0]}, nil
+		return &newProjectCommand{out: out, remoteURL: remoteURL, name: split[0]}, nil
 	}
 
-	return &newRepositoryCommand{remoteURL: remoteURL, projName: split[0], repoName: split[1]}, nil
+	return &newRepositoryCommand{out: out, remoteURL: remoteURL, projName: split[0], repoName: split[1]}, nil
 }
 
 // A putFileCommand puts a local file to the specified path which is
@@ -101,6 +104,7 @@ func newNewCommand(c *cli.Context) (Command, error) {
 // If the path ends with /, the file name of the localFilePath will be added to that /.
 // If the path is specified with a file name, the file will be added as the specified name.
 type putFileCommand struct {
+	out           io.Writer
 	repo          repositoryRequestInfo
 	localFilePath string
 }
@@ -117,7 +121,7 @@ func (pf *putFileCommand) execute(c *cli.Context) error {
 		return err
 	}
 
-	commitMessage, err := getCommitMessage(c, pf.localFilePath, addition)
+	commitMessage, err := getCommitMessage(c, pf.out, pf.localFilePath, addition)
 	if err != nil {
 		return err
 	}
@@ -132,11 +136,11 @@ func (pf *putFileCommand) execute(c *cli.Context) error {
 			pf.localFilePath, repo.projName, repo.repoName,
 			repo.path, repo.revision, httpStatusCode)
 	}
-	fmt.Printf("Put: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
+	fmt.Fprintf(pf.out, "Put: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
 	return nil
 }
 
-func newPutCommand(c *cli.Context) (Command, error) {
+func newPutCommand(c *cli.Context, out io.Writer) (Command, error) {
 	if len(c.Args()) != 2 {
 		return nil, newCommandLineError(c)
 	}
@@ -157,5 +161,5 @@ func newPutCommand(c *cli.Context) (Command, error) {
 			repo.path = repo.path + baseFileName
 		}
 	}
-	return &putFileCommand{repo: repo, localFilePath: fileName}, nil
+	return &putFileCommand{out: out, repo: repo, localFilePath: fileName}, nil
 }

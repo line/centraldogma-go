@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -28,27 +29,31 @@ func TestNewNormalizeCommand(t *testing.T) {
 		want      interface{}
 	}{
 		{[]string{"foo/bar"}, "",
-			normalizeRevisionCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL,
-				projName:  "foo",
-				repoName:  "bar",
-				path:      "/",
-				revision:  "-1"}},
+			normalizeRevisionCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL,
+					projName:  "foo",
+					repoName:  "bar",
+					path:      "/",
+					revision:  "-1"}},
 		},
 
 		{[]string{"foo/bar/"}, "10",
-			normalizeRevisionCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL,
-				projName:  "foo",
-				repoName:  "bar",
-				path:      "/",
-				revision:  "10"}},
+			normalizeRevisionCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL,
+					projName:  "foo",
+					repoName:  "bar",
+					path:      "/",
+					revision:  "10"}},
 		},
 	}
 
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, test.revision)
-		got, _ := newNormalizeCommand(c)
+		got, _ := newNormalizeCommand(c, os.Stdout)
 		switch comType := got.(type) {
 		case *normalizeRevisionCommand:
 			got2 := normalizeRevisionCommand(*comType)

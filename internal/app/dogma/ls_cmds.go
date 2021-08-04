@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/urfave/cli"
@@ -24,6 +25,7 @@ import (
 
 // A lsProjectCommand lists all the projects on the remote Central Dogma server.
 type lsProjectCommand struct {
+	out       io.Writer
 	remoteURL string
 	style     PrintStyle
 }
@@ -41,13 +43,14 @@ func (lsp *lsProjectCommand) execute(c *cli.Context) error {
 	if httpStatusCode != http.StatusOK {
 		return fmt.Errorf("failed to get the list of projects. (status: %d)", httpStatusCode)
 	}
-	printWithStyle(projects, lsp.style)
+	printWithStyle(lsp.out, projects, lsp.style)
 	return nil
 }
 
 // A lsRepositoryCommand lists all the repositories under the specified projName
 // on the remote Central Dogma server.
 type lsRepositoryCommand struct {
+	out       io.Writer
 	remoteURL string
 	projName  string
 	style     PrintStyle
@@ -69,13 +72,14 @@ func (lsr *lsRepositoryCommand) execute(c *cli.Context) error {
 			lsr.projName, httpStatusCode)
 	}
 
-	printWithStyle(repos, lsr.style)
+	printWithStyle(lsr.out, repos, lsr.style)
 	return nil
 }
 
 // A lsPathCommand lists the specified path which is {repo.projName}/{repo.repoName}/{repo.path}
 // on the remote Central Dogma server.
 type lsPathCommand struct {
+	out   io.Writer
 	repo  repositoryRequestInfo
 	style PrintStyle
 }
@@ -97,13 +101,13 @@ func (lsp *lsPathCommand) execute(c *cli.Context) error {
 			lsp.repo.projName, lsp.repo.repoName, lsp.repo.path, lsp.repo.revision, httpStatusCode)
 	}
 
-	printWithStyle(repos, lsp.style)
+	printWithStyle(lsp.out, repos, lsp.style)
 	return nil
 }
 
 // newLSCommand creates one of the ls project, repository, and path commands according to the
 // command arguments from the CLI. If the revision is not specified, -1 will be set by default.
-func newLSCommand(c *cli.Context, style PrintStyle) (Command, error) {
+func newLSCommand(c *cli.Context, out io.Writer, style PrintStyle) (Command, error) {
 	remoteURL, err := getRemoteURL(c.Parent().String("connect"))
 	if err != nil {
 		return nil, err
@@ -120,12 +124,12 @@ func newLSCommand(c *cli.Context, style PrintStyle) (Command, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &lsPathCommand{repo: repo, style: style}, nil
+		return &lsPathCommand{out: out, repo: repo, style: style}, nil
 	}
 
 	if len(split) == 0 {
-		return &lsProjectCommand{remoteURL: remoteURL, style: style}, nil
+		return &lsProjectCommand{out: out, remoteURL: remoteURL, style: style}, nil
 	}
 
-	return &lsRepositoryCommand{remoteURL: remoteURL, projName: split[0], style: style}, nil
+	return &lsRepositoryCommand{out: out, remoteURL: remoteURL, projName: split[0], style: style}, nil
 }

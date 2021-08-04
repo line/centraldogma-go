@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -28,34 +29,42 @@ func TestNewGetCommand(t *testing.T) {
 		want      interface{}
 	}{
 		{[]string{"foo/bar/a.txt"}, "",
-			getFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/a.txt", revision: "-1"},
+			getFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/a.txt", revision: "-1"},
 				localFilePath: "a.txt"}},
 
 		{[]string{"foo/bar/b/a.txt"}, "10",
-			getFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/b/a.txt", revision: "10"},
+			getFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/b/a.txt", revision: "10"},
 				localFilePath: "a.txt"}},
 
 		{[]string{"foo/bar/b/a.txt", "c.txt"}, "",
-			getFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/b/a.txt", revision: "-1"},
+			getFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/b/a.txt", revision: "-1"},
 				localFilePath: "c.txt"}},
 
 		{[]string{"foo/bar/a.txt", "b/c.txt"}, "",
-			getFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/a.txt", revision: "-1"},
+			getFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/a.txt", revision: "-1"},
 				localFilePath: "b/c.txt"}},
 	}
 
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, test.revision)
 
-		got, _ := newGetCommand(c)
+		got, _ := newGetCommand(c, os.Stdout)
 		switch comType := got.(type) {
 		case *getFileCommand:
 			got2 := getFileCommand(*comType)

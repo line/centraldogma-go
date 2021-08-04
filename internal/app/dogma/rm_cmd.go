@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/urfave/cli"
@@ -24,6 +25,7 @@ import (
 )
 
 type rmFileCommand struct {
+	out  io.Writer
 	repo repositoryRequestInfo
 }
 
@@ -36,7 +38,7 @@ func (rf *rmFileCommand) execute(c *cli.Context) error {
 
 	change := &centraldogma.Change{Path: repo.path, Type: centraldogma.Remove}
 
-	commitMessage, err := getCommitMessage(c, repo.path, removal)
+	commitMessage, err := getCommitMessage(c, rf.out, repo.path, removal)
 	if err != nil {
 		return err
 	}
@@ -51,15 +53,15 @@ func (rf *rmFileCommand) execute(c *cli.Context) error {
 			repo.projName, repo.repoName, repo.path, repo.revision, httpStatusCode)
 	}
 
-	fmt.Printf("Deleted: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
+	fmt.Fprintf(rf.out, "Deleted: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
 	return nil
 }
 
-func newRMCommand(c *cli.Context) (Command, error) {
+func newRMCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &rmFileCommand{repo: repo}, nil
+	return &rmFileCommand{out: out, repo: repo}, nil
 }

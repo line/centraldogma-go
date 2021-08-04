@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -26,14 +27,16 @@ func TestNewNewCommand(t *testing.T) {
 		arguments []string
 		want      interface{}
 	}{
-		{[]string{"foo"}, newProjectCommand{remoteURL: defaultRemoteURL, name: "foo"}},
-		{[]string{"/foo/"}, newProjectCommand{remoteURL: defaultRemoteURL, name: "foo"}},
+		{[]string{"foo"}, newProjectCommand{out: os.Stdout, remoteURL: defaultRemoteURL, name: "foo"}},
+		{[]string{"/foo/"}, newProjectCommand{out: os.Stdout, remoteURL: defaultRemoteURL, name: "foo"}},
 		{[]string{"foo/bar"}, newRepositoryCommand{
+			out:       os.Stdout,
 			remoteURL: defaultRemoteURL,
 			projName:  "foo",
 			repoName:  "bar"},
 		},
 		{[]string{"/foo/bar/"}, newRepositoryCommand{
+			out:       os.Stdout,
 			remoteURL: defaultRemoteURL,
 			projName:  "foo",
 			repoName:  "bar"},
@@ -42,7 +45,7 @@ func TestNewNewCommand(t *testing.T) {
 
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, "")
-		got, _ := newNewCommand(c)
+		got, _ := newNewCommand(c, os.Stdout)
 
 		switch comType := got.(type) {
 		case *newProjectCommand:
@@ -72,6 +75,7 @@ func TestNewAddCommand(t *testing.T) {
 	}{
 		{[]string{"foo/bar", "a.txt"}, "",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -83,6 +87,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar/b.txt", "a.txt"}, "",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -94,6 +99,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar", "/Users/my/a.txt"}, "15",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -105,6 +111,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar", "Users/my/a.txt"}, "1",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -116,6 +123,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"/foo/bar/", "./b.txt"}, "-1",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -127,6 +135,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar/b.txt", "c.txt"}, "-100",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -138,6 +147,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar/d", "e.txt"}, "1",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -149,6 +159,7 @@ func TestNewAddCommand(t *testing.T) {
 
 		{[]string{"foo/bar/d/", "g.txt"}, "",
 			putFileCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -162,7 +173,7 @@ func TestNewAddCommand(t *testing.T) {
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, test.revision)
 
-		got, _ := newPutCommand(c)
+		got, _ := newPutCommand(c, os.Stdout)
 		switch comType := got.(type) {
 		case *putFileCommand:
 			got2 := putFileCommand(*comType)

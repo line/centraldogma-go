@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -27,12 +28,13 @@ func TestNewLSCommand(t *testing.T) {
 		revision  string
 		want      interface{}
 	}{
-		{[]string{""}, "", lsProjectCommand{remoteURL: defaultRemoteURL}},
-		{[]string{"/foo/"}, "", lsRepositoryCommand{remoteURL: defaultRemoteURL, projName: "foo"}},
-		{[]string{"foo/"}, "", lsRepositoryCommand{remoteURL: defaultRemoteURL, projName: "foo"}},
-		{[]string{"foo"}, "", lsRepositoryCommand{remoteURL: defaultRemoteURL, projName: "foo"}},
+		{[]string{""}, "", lsProjectCommand{out: os.Stdout, remoteURL: defaultRemoteURL}},
+		{[]string{"/foo/"}, "", lsRepositoryCommand{out: os.Stdout, remoteURL: defaultRemoteURL, projName: "foo"}},
+		{[]string{"foo/"}, "", lsRepositoryCommand{out: os.Stdout, remoteURL: defaultRemoteURL, projName: "foo"}},
+		{[]string{"foo"}, "", lsRepositoryCommand{out: os.Stdout, remoteURL: defaultRemoteURL, projName: "foo"}},
 		{[]string{"foo/bar"}, "",
 			lsPathCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -44,6 +46,7 @@ func TestNewLSCommand(t *testing.T) {
 		},
 		{[]string{"foo/bar/"}, "",
 			lsPathCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -55,6 +58,7 @@ func TestNewLSCommand(t *testing.T) {
 		},
 		{[]string{"foo/bar/a"}, "",
 			lsPathCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -66,6 +70,7 @@ func TestNewLSCommand(t *testing.T) {
 		},
 		{[]string{"foo/bar/a/"}, "100",
 			lsPathCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -77,6 +82,7 @@ func TestNewLSCommand(t *testing.T) {
 		},
 		{[]string{"foo/bar/a.txt"}, "",
 			lsPathCommand{
+				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL,
 					projName:  "foo",
@@ -91,7 +97,7 @@ func TestNewLSCommand(t *testing.T) {
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, test.revision)
 
-		got, _ := newLSCommand(c, 0)
+		got, _ := newLSCommand(c, os.Stdout, 0)
 		switch comType := got.(type) {
 		case *lsProjectCommand:
 			got2 := lsProjectCommand(*comType)

@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -28,6 +29,7 @@ import (
 // A getFileCommand fetches the content of the file in the specified path matched by the
 // JSON path expressions with the specified revision.
 type getFileCommand struct {
+	out           io.Writer
 	repo          repositoryRequestInfo
 	localFilePath string
 	jsonPaths     []string
@@ -60,13 +62,14 @@ func (gf *getFileCommand) execute(c *cli.Context) error {
 		}
 	}
 
-	fmt.Printf("Downloaded: %s\n", path.Base(filePath))
+	fmt.Fprintf(gf.out, "Downloaded: %s\n", path.Base(filePath))
 	return nil
 }
 
 // A catFileCommand shows the content of the file in the specified path matched by the
 // JSON path expressions with the specified revision.
 type catFileCommand struct {
+	out       io.Writer
 	repo      repositoryRequestInfo
 	jsonPaths []string
 }
@@ -81,16 +84,16 @@ func (cf *catFileCommand) execute(c *cli.Context) error {
 
 	if entry.Type == centraldogma.JSON {
 		b := safeMarshalIndent(entry.Content)
-		fmt.Printf("%s\n", string(b))
+		fmt.Fprintf(cf.out, "%s\n", string(b))
 	} else if entry.Type == centraldogma.Text { //
-		fmt.Printf("%s\n", string(entry.Content))
+		fmt.Fprintf(cf.out, "%s\n", string(entry.Content))
 	}
 
 	return nil
 }
 
 func creatableFilePath(filePath string, inc int) string {
-	regex, _ := regexp.Compile("\\.[0-9]*$")
+	regex, _ := regexp.Compile(`\.[0-9]*$`)
 	if _, err := os.Stat(filePath); !os.IsNotExist(err) {
 		if inc == 1 {
 			filePath += "."
@@ -105,7 +108,7 @@ func creatableFilePath(filePath string, inc int) string {
 
 // newGetCommand creates the getCommand. If the localFilePath is not specified, the file name of the path
 // will be set by default.
-func newGetCommand(c *cli.Context) (Command, error) {
+func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
@@ -116,14 +119,14 @@ func newGetCommand(c *cli.Context) (Command, error) {
 		localFilePath = c.Args().Get(1)
 	}
 
-	return &getFileCommand{repo: repo, localFilePath: localFilePath, jsonPaths: c.StringSlice("jsonpath")}, nil
+	return &getFileCommand{out: out, repo: repo, localFilePath: localFilePath, jsonPaths: c.StringSlice("jsonpath")}, nil
 }
 
 // newCatCommand creates the catCommand.
-func newCatCommand(c *cli.Context) (Command, error) {
+func newCatCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
 	}
-	return &catFileCommand{repo: repo, jsonPaths: c.StringSlice("jsonpath")}, nil
+	return &catFileCommand{out: out, repo: repo, jsonPaths: c.StringSlice("jsonpath")}, nil
 }

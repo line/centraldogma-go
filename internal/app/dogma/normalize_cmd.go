@@ -17,12 +17,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/urfave/cli"
 )
 
 type normalizeRevisionCommand struct {
+	out  io.Writer
 	repo repositoryRequestInfo
 }
 
@@ -42,14 +44,14 @@ func (nr *normalizeRevisionCommand) execute(c *cli.Context) error {
 			repo.projName, repo.repoName, repo.revision, httpStatusCode)
 	}
 
-	fmt.Printf("normalized revision: %v\n", normalized)
+	fmt.Fprintf(nr.out, "normalized revision: %v\n", normalized)
 	return nil
 }
 
-func newNormalizeCommand(c *cli.Context) (Command, error) {
+func newNormalizeCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
 	}
-	return &normalizeRevisionCommand{repo: repo}, nil
+	return &normalizeRevisionCommand{out: out, repo: repo}, nil
 }
