@@ -1,7 +1,5 @@
 module go.linecorp.com/centraldogma
 
-go 1.16
-
 require (
 	github.com/armon/go-metrics v0.3.9
 	github.com/golang/protobuf v1.5.2 // indirect
