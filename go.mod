@@ -1,4 +1,4 @@
-module line/centraldogma-go
+module go.linecorp.com/centraldogma-go
 
 require (
 	github.com/armon/go-metrics v0.3.9
