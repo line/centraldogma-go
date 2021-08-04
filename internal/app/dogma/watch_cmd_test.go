@@ -46,7 +46,7 @@ func mockedCentralDogmaServer(entry dogma.Entry) *httptest.Server {
 	return ts
 }
 
-func runCommandAndCaptureStdout(wc *watchCommand, f func(wc *watchCommand)) []byte {
+func runCommandAndCaptureOutput(wc *watchCommand, f func(wc *watchCommand)) []byte {
 	r, w, err := os.Pipe()
 	if err != nil {
 		panic(err)
@@ -101,7 +101,7 @@ func TestListenerOption(t *testing.T) {
 		listenerFile: "cat",
 	}
 
-	out := runCommandAndCaptureStdout(&wc, func(wc *watchCommand) { wc.executeWithDogmaClient(nil, client) })
+	out := runCommandAndCaptureOutput(&wc, func(wc *watchCommand) { wc.executeWithDogmaClient(nil, client) })
 
 	if !bytes.Equal(out, entry.Content) {
 		t.Errorf("Got output %s; want %s", string(out), string(entry.Content))
@@ -109,7 +109,7 @@ func TestListenerOption(t *testing.T) {
 
 	wc.listenerFile = "env"
 
-	out = runCommandAndCaptureStdout(&wc, func(wc *watchCommand) { wc.executeWithDogmaClient(nil, client) })
+	out = runCommandAndCaptureOutput(&wc, func(wc *watchCommand) { wc.executeWithDogmaClient(nil, client) })
 	env := string(out)
 
 	if !strings.Contains(env, "DOGMA_WATCH_EVENT_PATH="+entry.Path) {
