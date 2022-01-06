@@ -33,7 +33,7 @@ type watchService service
 
 // WatchResult represents a result from watch operation.
 type WatchResult struct {
-	Revision       int   `json:"revision"`
+	Revision       int64 `json:"revision"`
 	Entry          Entry `json:"entry,omitempty"`
 	HttpStatusCode int
 	Err            error
@@ -165,7 +165,7 @@ type Watcher struct {
 	updateListenerChans atomic.Value // []chan *WatchResult
 	listenerChansLock   int32        // spin lock
 
-	doWatchFunc func(ctx context.Context, lastKnownRevision int) *WatchResult
+	doWatchFunc func(ctx context.Context, lastKnownRevision int64) *WatchResult
 
 	projectName string
 	repoName    string
@@ -309,8 +309,8 @@ func (ws *watchService) fileWatcherWithTimeout(
 	}
 
 	w := newWatcher(ctx, projectName, repoName, query.Path)
-	w.doWatchFunc = func(ctx context.Context, lastKnownRevision int) *WatchResult {
-		return ws.watchFile(ctx, projectName, repoName, strconv.Itoa(lastKnownRevision),
+	w.doWatchFunc = func(ctx context.Context, lastKnownRevision int64) *WatchResult {
+		return ws.watchFile(ctx, projectName, repoName, strconv.FormatInt(lastKnownRevision, 10),
 			query, timeout)
 	}
 	return w, nil
@@ -329,8 +329,8 @@ func (ws *watchService) repoWatcherWithTimeout(
 	timeout time.Duration,
 ) (*Watcher, error) {
 	w := newWatcher(ctx, projectName, repoName, pathPattern)
-	w.doWatchFunc = func(ctx context.Context, lastKnownRevision int) *WatchResult {
-		return ws.watchRepo(ctx, projectName, repoName, strconv.Itoa(lastKnownRevision),
+	w.doWatchFunc = func(ctx context.Context, lastKnownRevision int64) *WatchResult {
+		return ws.watchRepo(ctx, projectName, repoName, strconv.FormatInt(lastKnownRevision, 10),
 			pathPattern, timeout)
 	}
 	return w, nil
@@ -368,7 +368,7 @@ func (w *Watcher) doWatch() {
 		return
 	}
 
-	var lastKnownRevision int
+	var lastKnownRevision int64
 	curLatest := w.getLatest()
 	if curLatest == nil || curLatest.Revision == 0 {
 		lastKnownRevision = 1 // Init revision

@@ -99,13 +99,13 @@ func (e *EntryContent) UnmarshalJSON(b []byte) error {
 
 // PushResult represents a result of push in the repository.
 type PushResult struct {
-	Revision int    `json:"revision"`
+	Revision int64  `json:"revision"`
 	PushedAt string `json:"pushedAt"`
 }
 
 // Commit represents a commit in the repository.
 type Commit struct {
-	Revision      int           `json:"revision"`
+	Revision      int64         `json:"revision"`
 	Author        Author        `json:"author,omitempty"`
 	CommitMessage CommitMessage `json:"commitMessage,omitempty"`
 	PushedAt      string        `json:"pushedAt,omitempty"`

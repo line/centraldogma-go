@@ -250,7 +250,7 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 			panic("latest from AwaitInitialValue is not valid")
 		}
 
-		want := 3
+		var want int64 = 3
 		if latest.Revision != want {
 			t.Errorf("latest from AwaitInitialValue: %+v, want %+v", latest.Revision, want)
 		}
@@ -284,11 +284,11 @@ func TestRepoWatcher(t *testing.T) {
 	fw, _ := c.RepoWatcher("foo", "bar", "/**")
 	defer fw.Close()
 
-	myCh := make(chan int, 128)
+	myCh := make(chan int64, 128)
 	listener := func(value WatchResult) { myCh <- value.Revision }
 	_ = fw.Watch(listener)
 
-	want := 2
+	var want int64 = 2
 	for i := 0; i < 5; i++ {
 		select {
 		case revision := <-myCh:
@@ -318,11 +318,11 @@ func TestRepoWatcherInvalidPathPattern(t *testing.T) {
 	mux.HandleFunc("/api/v1/projects/foo/repos/bar/contents/", handler)
 
 	patterns := []string{"", "**", "**/a.json", "a.json"}
-	want := 2
+	var want int64 = 2
 	for _, pattern := range patterns {
 		fw, _ := c.RepoWatcher("foo", "bar", pattern)
 
-		myCh := make(chan int, 128)
+		myCh := make(chan int64, 128)
 		listener := func(value WatchResult) { myCh <- value.Revision }
 		_ = fw.Watch(listener)
 

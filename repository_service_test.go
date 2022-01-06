@@ -158,7 +158,7 @@ func TestNormalizeRevision(t *testing.T) {
 	})
 
 	normalizedRevision, _, _ := c.NormalizeRevision(context.Background(), "foo", "bar", "-2")
-	want := 3
+	var want int64 = 3
 	if normalizedRevision != want {
 		t.Errorf("NormalizeRevision returned %v, want %v", normalizedRevision, want)
 	}

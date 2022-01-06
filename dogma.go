@@ -423,7 +423,7 @@ func (c *Client) ListRemovedRepositories(
 
 // NormalizeRevision converts the relative revision number to the absolute revision number(e.g. -1 -> 3).
 func (c *Client) NormalizeRevision(
-	ctx context.Context, projectName, repoName, revision string) (normalizedRev int, httpStatusCode int, err error) {
+	ctx context.Context, projectName, repoName, revision string) (normalizedRev int64, httpStatusCode int, err error) {
 	return c.repository.normalizeRevision(ctx, projectName, repoName, revision)
 }
 

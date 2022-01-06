@@ -27,7 +27,7 @@ type repositoryService service
 type Repository struct {
 	Name         string `json:"name"`
 	Creator      Author `json:"creator,omitempty"`
-	HeadRevision int    `json:"headRevision,omitempty"`
+	HeadRevision int64  `json:"headRevision,omitempty"`
 	URL          string `json:"url,omitempty"`
 	CreatedAt    string `json:"createdAt,omitempty"`
 }
@@ -183,7 +183,7 @@ func (r *repositoryService) listRemoved(ctx context.Context, projectName string)
 }
 
 func (r *repositoryService) normalizeRevision(
-	ctx context.Context, projectName, repoName, revision string) (int, int, error) {
+	ctx context.Context, projectName, repoName, revision string) (int64, int, error) {
 	// build relative url
 	u, err := url.Parse(path.Join(
 		defaultPathPrefix,
@@ -209,5 +209,5 @@ func (r *repositoryService) normalizeRevision(
 }
 
 type rev struct {
-	Rev int `json:"revision"`
+	Rev int64 `json:"revision"`
 }
