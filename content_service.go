@@ -49,7 +49,7 @@ type Entry struct {
 	Path       string       `json:"path"`
 	Type       EntryType    `json:"type"` // can be JSON, TEXT or DIRECTORY
 	Content    EntryContent `json:"content,omitempty"`
-	Revision   int64        `json:"revision,omitempty"`
+	Revision   int          `json:"revision,omitempty"`
 	URL        string       `json:"url,omitempty"`
 	ModifiedAt string       `json:"modifiedAt,omitempty"`
 }
