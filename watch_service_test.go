@@ -56,7 +56,7 @@ func TestWatchFile(t *testing.T) {
 	defer closer()
 
 	entryWant := Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
-	revisionWant := 3
+	var revisionWant int64 = 3
 	select {
 	case result := <-watchResult:
 		if !reflect.DeepEqual(result.Revision, revisionWant) {
@@ -90,7 +90,7 @@ func TestWatchFileInvalidPath(t *testing.T) {
 	defer closer()
 
 	entryWant := Entry{Path: "/a.json", Type: JSON, Content: EntryContent(`{"a":"b"}`)}
-	revisionWant := 3
+	var revisionWant int64 = 3
 	select {
 	case result := <-watchResult:
 		if !reflect.DeepEqual(result.Revision, revisionWant) {
