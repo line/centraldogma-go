@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -30,6 +31,7 @@ import (
 )
 
 type watchCommand struct {
+	out          io.Writer
 	repo         repositoryRequestInfo
 	jsonPaths    []string
 	streaming    bool
@@ -47,7 +49,7 @@ func (e *listenerExecError) Error() string {
 
 func (wc *watchCommand) defaultListener(watchResult dogma.WatchResult) error {
 	repo := wc.repo
-	fmt.Printf("Watcher noticed updated file: %s/%s%s, rev=%v\n",
+	fmt.Fprintf(wc.out, "Watcher noticed updated file: %s/%s%s, rev=%v\n",
 		repo.projName, repo.repoName, repo.path, watchResult.Revision)
 	content := ""
 	if strings.HasSuffix(strings.ToLower(repo.path), ".json") {
@@ -55,7 +57,7 @@ func (wc *watchCommand) defaultListener(watchResult dogma.WatchResult) error {
 	} else {
 		content = string(watchResult.Entry.Content)
 	}
-	fmt.Printf("Content:\n%s\n", content)
+	fmt.Fprintf(wc.out, "Content:\n%s\n", content)
 	return nil
 }
 
@@ -67,7 +69,7 @@ func (wc *watchCommand) commandExecutionListener(watchResult dogma.WatchResult) 
 		"DOGMA_WATCH_EVENT_REV="+strconv.Itoa(watchResult.Revision),
 		"DOGMA_WATCH_EVENT_URL="+watchResult.Entry.URL)
 	command.Stdin = bytes.NewReader(watchResult.Entry.Content)
-	command.Stdout = os.Stdout
+	command.Stdout = wc.out
 	command.Stderr = os.Stderr
 	err := command.Run()
 	if err != nil {
@@ -140,7 +142,7 @@ func (wc *watchCommand) executeWithDogmaClient(c *cli.Context, client *dogma.Cli
 			return
 
 		case <-signalChan:
-			fmt.Println("\nReceived an interrupt, stopping watcher...")
+			fmt.Fprintln(wc.out, "\nReceived an interrupt, stopping watcher...")
 			fw.Close()
 			notifyDone(nil)
 		}
@@ -151,11 +153,11 @@ func (wc *watchCommand) executeWithDogmaClient(c *cli.Context, client *dogma.Cli
 }
 
 // newWatchCommand creates the watchCommand.
-func newWatchCommand(c *cli.Context) (Command, error) {
+func newWatchCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &watchCommand{repo: repo, jsonPaths: c.StringSlice("jsonpath"), streaming: c.Bool("streaming"), listenerFile: c.String("listener")}, nil
+	return &watchCommand{out: out, repo: repo, jsonPaths: c.StringSlice("jsonpath"), streaming: c.Bool("streaming"), listenerFile: c.String("listener")}, nil
 }

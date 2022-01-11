@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -29,6 +30,7 @@ import (
 
 // An editFileCommand modifies the file of the specified path with the revision.
 type editFileCommand struct {
+	out  io.Writer
 	repo repositoryRequestInfo
 }
 
@@ -39,12 +41,12 @@ func (ef *editFileCommand) execute(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	change, err := editRemoteFileContent(remoteEntry)
+	change, err := editRemoteFileContent(ef.out, remoteEntry)
 	if err != nil {
 		return err
 	}
 
-	commitMessage, err := getCommitMessage(c, change.Path, edition)
+	commitMessage, err := getCommitMessage(c, ef.out, change.Path, edition)
 	if err != nil {
 		return err
 	}
@@ -64,18 +66,18 @@ func (ef *editFileCommand) execute(c *cli.Context) error {
 			repo.projName, repo.repoName, repo.path, repo.revision, httpStatusCode)
 	}
 
-	fmt.Printf("Edited: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
+	fmt.Fprintf(ef.out, "Edited: /%s/%s%s\n", repo.projName, repo.repoName, repo.path)
 	return nil
 }
 
-func editRemoteFileContent(remote *centraldogma.Entry) (*centraldogma.Change, error) {
+func editRemoteFileContent(out io.Writer, remote *centraldogma.Entry) (*centraldogma.Change, error) {
 	tempFilePath, err := putIntoTempFile(remote)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(tempFilePath)
 
-	cmd := cmdToOpenEditor(tempFilePath)
+	cmd := cmdToOpenEditor(out, tempFilePath)
 	if err = cmd.Start(); err != nil {
 		return nil, err
 	}
@@ -112,10 +114,10 @@ func editRemoteFileContent(remote *centraldogma.Entry) (*centraldogma.Change, er
 }
 
 // newEditCommand creates the editCommand.
-func newEditCommand(c *cli.Context) (Command, error) {
+func newEditCommand(c *cli.Context, out io.Writer) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
 	}
-	return &editFileCommand{repo: repo}, nil
+	return &editFileCommand{out: out, repo: repo}, nil
 }

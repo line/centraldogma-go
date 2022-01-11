@@ -17,12 +17,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/urfave/cli"
 )
 
 type logCommand struct {
+	out        io.Writer
 	repo       repositoryRequestInfoWithFromTo
 	maxCommits int
 	style      PrintStyle
@@ -45,12 +47,12 @@ func (l *logCommand) execute(c *cli.Context) error {
 			repo.projName, repo.repoName, repo.path, repo.from, repo.to, httpStatusCode)
 	}
 
-	printWithStyle(commits, l.style)
+	printWithStyle(l.out, commits, l.style)
 	return nil
 }
 
 // newLogCommand creates the logCommand.
-func newLogCommand(c *cli.Context, style PrintStyle) (Command, error) {
+func newLogCommand(c *cli.Context, out io.Writer, style PrintStyle) (Command, error) {
 	repo, err := newRepositoryRequestInfo(c)
 	if err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func newLogCommand(c *cli.Context, style PrintStyle) (Command, error) {
 	repoWithFromTo.from = from
 	repoWithFromTo.to = to
 
-	log := &logCommand{repo: repoWithFromTo, style: style}
+	log := &logCommand{out: out, repo: repoWithFromTo, style: style}
 	maxCommits := c.Int("max-commits")
 	if maxCommits != 0 {
 		log.maxCommits = maxCommits

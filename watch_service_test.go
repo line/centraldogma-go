@@ -256,7 +256,9 @@ func TestWatcher_started_AwaitInitialValue(t *testing.T) {
 		}
 
 		latest2 := fw.Latest()
-		if !reflect.DeepEqual(latest2, latest) {
+		if !reflect.DeepEqual(latest2.Entry, latest.Entry) ||
+			latest2.HttpStatusCode != latest.HttpStatusCode ||
+			latest2.Revision != latest.Revision {
 			t.Errorf("latest: %+v, want %+v", latest2, latest)
 		}
 

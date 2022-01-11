@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -28,20 +29,24 @@ func TestNewEditCommand(t *testing.T) {
 		want      interface{}
 	}{
 		{[]string{"foo/bar/a.txt"}, "",
-			editFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/a.txt", revision: "-1"}}},
+			editFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/a.txt", revision: "-1"}}},
 
 		{[]string{"foo/bar/b/a.txt"}, "10",
-			editFileCommand{repo: repositoryRequestInfo{
-				remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
-				path: "/b/a.txt", revision: "10"}}},
+			editFileCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/b/a.txt", revision: "10"}}},
 	}
 
 	for _, test := range tests {
 		c := newContext(test.arguments, defaultRemoteURL, test.revision)
 
-		got, _ := newEditCommand(c)
+		got, _ := newEditCommand(c, os.Stdout)
 		switch comType := got.(type) {
 		case *editFileCommand:
 			got2 := editFileCommand(*comType)

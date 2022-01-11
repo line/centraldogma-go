@@ -16,6 +16,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/urfave/cli"
 )
@@ -91,14 +93,14 @@ func getPrintStyle(c *cli.Context) (PrintStyle, error) {
 	}
 	if c.Bool("simple") {
 		if ps != 0 {
-			return 0, fmt.Errorf("duplicate print style (pretty: %t, simple: %t, json: %t)\n",
+			return 0, fmt.Errorf("duplicate print style (pretty: %t, simple: %t, json: %t)",
 				c.Bool("pretty"), c.Bool("simple"), c.Bool("json"))
 		}
 		ps = Simple
 	}
 	if c.Bool("json") {
 		if ps != 0 {
-			return 0, fmt.Errorf("duplicate print style (pretty: %t, simple: %t, json: %t)\n",
+			return 0, fmt.Errorf("duplicate print style (pretty: %t, simple: %t, json: %t)",
 				c.Bool("pretty"), c.Bool("simple"), c.Bool("json"))
 		}
 		ps = JSON
@@ -109,10 +111,10 @@ func getPrintStyle(c *cli.Context) (PrintStyle, error) {
 	return ps, nil
 }
 
-func printWithStyle(data interface{}, format PrintStyle) {
+func printWithStyle(out io.Writer, data interface{}, format PrintStyle) {
 	// TODO implement this method
 	buf, _ := marshalIndentObject(data)
-	fmt.Printf("%s\n", buf)
+	fmt.Fprintf(out, "%s\n", buf)
 }
 
 func newCommandLineError(c *cli.Context) *cli.ExitError {
@@ -132,7 +134,7 @@ func CLICommands() []cli.Command {
 				if err != nil {
 					return err
 				}
-				command, err := newLSCommand(c, style)
+				command, err := newLSCommand(c, os.Stdout, style)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -148,7 +150,7 @@ func CLICommands() []cli.Command {
 			Usage:     "Creates a project or repository",
 			ArgsUsage: "<project_name>[/<repository_name>]",
 			Action: func(c *cli.Context) error {
-				command, err := newNewCommand(c)
+				command, err := newNewCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -165,7 +167,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>[/<path>] file_path",
 			Flags:     []cli.Flag{revisionFlag, commitMessageFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newPutCommand(c)
+				command, err := newPutCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -182,7 +184,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, commitMessageFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newEditCommand(c)
+				command, err := newEditCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -199,7 +201,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, jsonPathFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newGetCommand(c)
+				command, err := newGetCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -216,7 +218,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, jsonPathFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newCatCommand(c)
+				command, err := newCatCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -246,7 +248,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, streamingFlag, listenerFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newWatchCommand(c)
+				command, err := newWatchCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -263,7 +265,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
 			Flags:     []cli.Flag{revisionFlag, commitMessageFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newRMCommand(c)
+				command, err := newRMCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -284,7 +286,7 @@ func CLICommands() []cli.Command {
 				if err != nil {
 					return err
 				}
-				command, err := newDiffCommand(c, style)
+				command, err := newDiffCommand(c, os.Stdout, style)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -305,7 +307,7 @@ func CLICommands() []cli.Command {
 				if err != nil {
 					return err
 				}
-				command, err := newLogCommand(c, style)
+				command, err := newLogCommand(c, os.Stdout, style)
 				if err != nil {
 					return newCommandLineError(c)
 				}
@@ -322,7 +324,7 @@ func CLICommands() []cli.Command {
 			ArgsUsage: "<project_name>/<repository_name>",
 			Flags:     []cli.Flag{revisionFlag},
 			Action: func(c *cli.Context) error {
-				command, err := newNormalizeCommand(c)
+				command, err := newNormalizeCommand(c, os.Stdout)
 				if err != nil {
 					return newCommandLineError(c)
 				}
