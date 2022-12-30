@@ -135,7 +135,6 @@ func TestGetRecursive(t *testing.T) {
 	rand.Read(b)
 	localFilePath := "/tmp/" + hex.EncodeToString(b)
 	defer os.RemoveAll(localFilePath)
-	defer os.RemoveAll(localFilePath + ".1")
 
 	remoteURL := server.URL
 	c := newGetCmdContext([]string{"abcd/repo1/x", localFilePath}, remoteURL, "", true)
