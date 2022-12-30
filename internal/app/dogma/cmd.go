@@ -51,11 +51,12 @@ func getRemoteURL(remoteURL string) (string, error) {
 }
 
 type repositoryRequestInfo struct {
-	remoteURL string
-	projName  string
-	repoName  string
-	path      string
-	revision  string
+	remoteURL           string
+	projName            string
+	repoName            string
+	path                string
+	revision            string
+	isRecursiveDownload bool
 }
 
 // newRepositoryRequestInfo creates a repositoryRequestInfo.
@@ -85,6 +86,8 @@ func newRepositoryRequestInfo(c *cli.Context) (repositoryRequestInfo, error) {
 	if len(revision) != 0 {
 		repo.revision = revision
 	}
+
+	repo.isRecursiveDownload = c.Bool("recursive")
 	return repo, nil
 }
 
