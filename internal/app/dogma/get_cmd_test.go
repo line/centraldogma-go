@@ -26,9 +26,10 @@ func TestNewGetCommand(t *testing.T) {
 	var tests = []struct {
 		arguments []string
 		revision  string
+		isRecursive bool
 		want      interface{}
 	}{
-		{[]string{"foo/bar/a.txt"}, "",
+		{[]string{"foo/bar/a.txt"}, "", false,
 			getFileCommand{
 				out: os.Stdout,
 				repo: repositoryRequestInfo{
@@ -36,7 +37,7 @@ func TestNewGetCommand(t *testing.T) {
 					path: "/a.txt", revision: "-1"},
 				localFilePath: "a.txt"}},
 
-		{[]string{"foo/bar/b/a.txt"}, "10",
+		{[]string{"foo/bar/b/a.txt"}, "10", false,
 			getFileCommand{
 				out: os.Stdout,
 				repo: repositoryRequestInfo{
@@ -44,7 +45,7 @@ func TestNewGetCommand(t *testing.T) {
 					path: "/b/a.txt", revision: "10"},
 				localFilePath: "a.txt"}},
 
-		{[]string{"foo/bar/b/a.txt", "c.txt"}, "",
+		{[]string{"foo/bar/b/a.txt", "c.txt"}, "", false,
 			getFileCommand{
 				out: os.Stdout,
 				repo: repositoryRequestInfo{
@@ -52,24 +53,43 @@ func TestNewGetCommand(t *testing.T) {
 					path: "/b/a.txt", revision: "-1"},
 				localFilePath: "c.txt"}},
 
-		{[]string{"foo/bar/a.txt", "b/c.txt"}, "",
+		{[]string{"foo/bar/a.txt", "b/c.txt"}, "", false,
 			getFileCommand{
 				out: os.Stdout,
 				repo: repositoryRequestInfo{
 					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
 					path: "/a.txt", revision: "-1"},
 				localFilePath: "b/c.txt"}},
+		{
+			arguments: []string{"foo/bar/a.txt"},
+			revision: "",
+			isRecursive: true,
+			want: getDirectoryCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/a.txt", revision: "-1",
+					isRecursiveDownload: true,
+				},
+				localFilePath: "a.txt",
+			},
+		},
 	}
 
 	for _, test := range tests {
-		c := newContext(test.arguments, defaultRemoteURL, test.revision)
+		c := newGetCmdContext(test.arguments, defaultRemoteURL, test.revision, test.isRecursive)
 
 		got, _ := newGetCommand(c, os.Stdout)
 		switch comType := got.(type) {
 		case *getFileCommand:
 			got2 := getFileCommand(*comType)
 			if !reflect.DeepEqual(got2, test.want) {
-				t.Errorf("newGetCommand(%q) = %q, want: %q", test.arguments, got2, test.want)
+				t.Errorf("newGetCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
+			}
+		case *getDirectoryCommand:
+			got2 := getDirectoryCommand(*comType)
+			if !reflect.DeepEqual(got2, test.want) {
+				t.Errorf("newGetCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
 			}
 		default:
 			t.Errorf("newGetCommand(%q) = %q, want: %q", test.arguments, got, test.want)
