@@ -93,7 +93,7 @@ func (gd *getDirectoryCommand) execute(c *cli.Context) error {
 	return gd.executeWithDogmaClient(c, client)
 }
 
-func (gd *getDirectoryCommand) executeWithDogmaClient(c *cli.Context, client *centraldogma.Client) error {
+func (gd *getDirectoryCommand) executeWithDogmaClient(_ *cli.Context, client *centraldogma.Client) error {
 	repo := gd.repo
 	entry, err := getRemoteFileEntryWithDogmaClient(client,
 		repo.projName, repo.repoName, repo.path, repo.revision, gd.jsonPaths)
@@ -109,17 +109,18 @@ func (gd *getDirectoryCommand) executeWithDogmaClient(c *cli.Context, client *ce
 	if err := os.MkdirAll(basename, defaultPermMode); err != nil {
 		return err
 	}
-	return gd.recurseDownload(context.Background(), basename, entry, client, &repo)
+	return gd.recurseDownload(context.Background(), basename, entry, client)
 }
 
 func (gd *getDirectoryCommand) recurseDownload(ctx context.Context,
 	basename string, rootEntry *centraldogma.Entry,
-	client *centraldogma.Client, repo *repositoryRequestInfo) error {
+	client *centraldogma.Client) error {
 	if rootEntry.Type != centraldogma.Directory {
 		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead",
 			rootEntry.Path)
 	}
 
+	repo := gd.repo
 	path := rootEntry.Path
 	entries, httpStatusCode, err := client.ListFiles(ctx, repo.projName, repo.repoName, repo.revision, path)
 	if err != nil {
@@ -134,7 +135,7 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context,
 	for _, entry := range entries {
 		switch entry.Type {
 		case centraldogma.Directory:
-			if err := gd.recurseDownload(ctx, basename, entry, client, repo); err != nil {
+			if err := gd.recurseDownload(ctx, basename, entry, client); err != nil {
 				return err
 			}
 		default:
