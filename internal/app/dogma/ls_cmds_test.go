@@ -112,7 +112,7 @@ func TestNewLSCommand(t *testing.T) {
 		case *lsPathCommand:
 			got2 := lsPathCommand(*comType)
 			if !reflect.DeepEqual(got2, test.want) {
-				t.Errorf("newAddCommand(%q) = %q, want: %q", test.arguments, got2, test.want)
+				t.Errorf("newAddCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
 			}
 		default:
 			t.Errorf("newLSCommand(%q) = %q, want: %q", test.arguments, got, test.want)

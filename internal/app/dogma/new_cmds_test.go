@@ -178,7 +178,7 @@ func TestNewAddCommand(t *testing.T) {
 		case *putFileCommand:
 			got2 := putFileCommand(*comType)
 			if !reflect.DeepEqual(got2, test.want) {
-				t.Errorf("newPutCommand(%q) = %q, want: %q", test.arguments, got2, test.want)
+				t.Errorf("newPutCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
 			}
 		default:
 			t.Errorf("newPutCommand(%q) = %q, want: %q", test.arguments, got, test.want)
