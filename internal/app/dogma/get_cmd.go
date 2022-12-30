@@ -147,6 +147,7 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context,
 }
 
 func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basename, path string) error {
+	repo := gd.repo
 	name := gd.constructFilename(basename, path)
 	if err := os.MkdirAll(filepath.Dir(name), defaultPermMode); err != nil {
 		return err
@@ -157,7 +158,8 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 	}
 	defer fd.Close()
 
-	entry, err := getRemoteEntryWithDogmaClient(client, &gd.repo, path, gd.jsonPaths)
+	entry, err := getRemoteFileEntryWithDogmaClient(client,
+		repo.projName, repo.repoName, path, repo.revision, gd.jsonPaths)
 	if err != nil {
 		return err
 	}
@@ -188,16 +190,6 @@ func (gd *getDirectoryCommand) constructFilename(basename, path string) string {
 func getRemoteEntry(c *cli.Context, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
 	entry, err := getRemoteFileEntry(
 		c, repo.remoteURL, repo.projName, repo.repoName, path, repo.revision, jsonPaths)
-	if err != nil {
-		return nil, err
-	}
-
-	return entry, nil
-}
-
-func getRemoteEntryWithDogmaClient(client *centraldogma.Client, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
-	entry, err := getRemoteFileEntryWithDogmaClient(client,
-		repo.projName, repo.repoName, path, repo.revision, jsonPaths)
 	if err != nil {
 		return nil, err
 	}
