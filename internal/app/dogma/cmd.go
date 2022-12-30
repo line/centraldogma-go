@@ -133,6 +133,12 @@ func getRemoteFileEntry(c *cli.Context,
 		return nil, err
 	}
 
+	return getRemoteFileEntryWithDogmaClient(client,
+		projName, repoName, repoPath, revision, jsonPaths)
+}
+
+func getRemoteFileEntryWithDogmaClient(client *centraldogma.Client,
+	projName, repoName, repoPath, revision string, jsonPaths []string) (*centraldogma.Entry, error) {
 	query := createQuery(repoPath, jsonPaths)
 	entry, httpStatusCode, err := client.GetFile(context.Background(), projName, repoName, revision, query)
 	if err != nil {
