@@ -17,8 +17,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/urfave/cli"
-	"go.linecorp.com/centraldogma"
 	"io"
 	"net/http"
 	"os"
@@ -27,6 +25,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/urfave/cli"
+	"go.linecorp.com/centraldogma"
 )
 
 const (

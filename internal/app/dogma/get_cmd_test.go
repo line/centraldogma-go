@@ -20,7 +20,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"go.linecorp.com/centraldogma"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +27,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"go.linecorp.com/centraldogma"
 )
 
 func TestNewGetCommand(t *testing.T) {
