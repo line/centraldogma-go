@@ -135,7 +135,7 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context,
 	for _, entry := range entries {
 		switch entry.Type {
 		case centraldogma.Directory:
-			if err := gd.recurseDownload(ctx, basename, entry, client); err != nil {
+			if err := gd.recurseDownload(ctx, client, basename, entry); err != nil {
 				return err
 			}
 		default:
