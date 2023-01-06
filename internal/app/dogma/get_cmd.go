@@ -171,8 +171,7 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 			return err
 		}
 	} else if entry.Type == centraldogma.Text {
-		_, err = fd.Write(entry.Content)
-		if err != nil {
+		if _, err = fd.Write(entry.Content); err != nil {
 			return err
 		}
 	}
