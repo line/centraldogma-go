@@ -82,7 +82,6 @@ type getDirectoryCommand struct {
 	out           io.Writer
 	repo          repositoryRequestInfo
 	localFilePath string
-	jsonPaths     []string
 }
 
 func (gd *getDirectoryCommand) execute(c *cli.Context) error {
@@ -97,7 +96,7 @@ func (gd *getDirectoryCommand) execute(c *cli.Context) error {
 func (gd *getDirectoryCommand) executeWithDogmaClient(_ *cli.Context, client *centraldogma.Client) error {
 	repo := gd.repo
 	entry, err := getRemoteFileEntryWithDogmaClient(client,
-		repo.projName, repo.repoName, repo.path, repo.revision, gd.jsonPaths)
+		repo.projName, repo.repoName, repo.path, repo.revision, nil)
 	if err != nil {
 		return err
 	}
@@ -160,7 +159,7 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 	defer fd.Close()
 
 	entry, err := getRemoteFileEntryWithDogmaClient(client,
-		repo.projName, repo.repoName, path, repo.revision, gd.jsonPaths)
+		repo.projName, repo.repoName, path, repo.revision, nil)
 	if err != nil {
 		return err
 	}
@@ -255,7 +254,6 @@ func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 			out:           out,
 			repo:          repo,
 			localFilePath: localFilePath,
-			jsonPaths:     c.StringSlice("jsonpath"),
 		}, nil
 	}
 
