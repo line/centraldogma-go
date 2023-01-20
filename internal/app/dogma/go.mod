@@ -1,6 +1,6 @@
 module go.linecorp.com/centraldogma/internal/app/dogma
 
-go 1.19
+go 1.18
 
 require (
 	github.com/urfave/cli v1.22.5
