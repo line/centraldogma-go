@@ -153,10 +153,20 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 		return err
 	}
 	fd, err := os.Create(name)
+	defer func() {
+		if err == nil {
+			err = fd.Close()
+		}
+
+		if err != nil {
+			_ = os.Remove(name)
+		} else {
+			fmt.Fprintf(gd.out, "Downloaded: %s\n", name)
+		}
+	}()
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
 
 	entry, err := getRemoteFileEntryWithDogmaClient(client,
 		repo.projName, repo.repoName, path, repo.revision, nil)
@@ -175,15 +185,13 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 		}
 	}
 
-	fmt.Fprintf(gd.out, "Downloaded: %s\n", name)
-
 	return nil
 }
 
 func (gd *getDirectoryCommand) constructFilename(basename, path string) string {
 	paths := strings.Split(path, "/")
-	cleanPath := strings.Join(paths[2:], "/")
-	return basename + "/" + cleanPath
+	cleanPath := filepath.Join(paths[2:]...)
+	return filepath.Join(basename, cleanPath)
 }
 
 func getRemoteEntry(c *cli.Context, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
