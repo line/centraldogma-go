@@ -148,7 +148,11 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *cent
 
 func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basename, path string) error {
 	repo := gd.repo
-	name := gd.constructFilename(basename, path)
+	name, err := gd.constructFilename(basename, path)
+	if err != nil {
+		return err
+	}
+
 	if err := os.MkdirAll(filepath.Dir(name), defaultPermMode); err != nil {
 		return err
 	}
@@ -188,10 +192,13 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 	return nil
 }
 
-func (gd *getDirectoryCommand) constructFilename(basename, path string) string {
+func (gd *getDirectoryCommand) constructFilename(basename, path string) (string, error) {
 	paths := strings.Split(path, "/")
+	if len(paths) < 3 {
+		return "", fmt.Errorf("invalid path: %q can't be processed", path)
+	}
 	cleanPath := filepath.Join(paths[2:]...)
-	return filepath.Join(basename, cleanPath)
+	return filepath.Join(basename, cleanPath), nil
 }
 
 func getRemoteEntry(c *cli.Context, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
