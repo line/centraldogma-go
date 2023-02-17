@@ -51,7 +51,7 @@ func TestNewEditCommand(t *testing.T) {
 		case *editFileCommand:
 			got2 := editFileCommand(*comType)
 			if !reflect.DeepEqual(got2, test.want) {
-				t.Errorf("newEditCommand(%q) = %q, want: %q", test.arguments, got2, test.want)
+				t.Errorf("newEditCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
 			}
 		default:
 			t.Errorf("newEditCommand(%q) = %q, want: %q", test.arguments, got, test.want)

@@ -32,6 +32,11 @@ var revisionFlag = cli.StringFlag{
 	Usage: "Specifies the revision to operate",
 }
 
+var recursiveFlag = cli.BoolFlag{
+	Name:  "recursive",
+	Usage: "Specifies whether to download a whole directory",
+}
+
 var jsonPathFlag = cli.StringSliceFlag{
 	Name:  "jsonpath, j",
 	Usage: "Specifies the JSON path expressions to apply",
@@ -199,7 +204,7 @@ func CLICommands() []cli.Command {
 			Name:      "get",
 			Usage:     "Downloads a file in the path",
 			ArgsUsage: "<project_name>/<repository_name>/<path>",
-			Flags:     []cli.Flag{revisionFlag, jsonPathFlag},
+			Flags:     []cli.Flag{revisionFlag, jsonPathFlag, recursiveFlag},
 			Action: func(c *cli.Context) error {
 				command, err := newGetCommand(c, os.Stdout)
 				if err != nil {

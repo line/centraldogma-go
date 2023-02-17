@@ -15,15 +15,23 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/urfave/cli"
 	"go.linecorp.com/centraldogma"
+)
+
+const (
+	defaultPermMode = 0755
 )
 
 // A getFileCommand fetches the content of the file in the specified path matched by the
@@ -37,10 +45,14 @@ type getFileCommand struct {
 
 func (gf *getFileCommand) execute(c *cli.Context) error {
 	repo := gf.repo
-	entry, err := getRemoteFileEntry(
-		c, repo.remoteURL, repo.projName, repo.repoName, repo.path, repo.revision, gf.jsonPaths)
+
+	entry, err := getRemoteEntry(c, &repo, repo.path, gf.jsonPaths)
 	if err != nil {
 		return err
+	}
+
+	if entry.Type == centraldogma.Directory && !repo.isRecursiveDownload {
+		return fmt.Errorf("%+q is a directory, you might want to use `--recursive` instead", repo.path)
 	}
 
 	filePath := creatableFilePath(gf.localFilePath, 1)
@@ -64,6 +76,139 @@ func (gf *getFileCommand) execute(c *cli.Context) error {
 
 	fmt.Fprintf(gf.out, "Downloaded: %s\n", path.Base(filePath))
 	return nil
+}
+
+type getDirectoryCommand struct {
+	out           io.Writer
+	repo          repositoryRequestInfo
+	localFilePath string
+}
+
+func (gd *getDirectoryCommand) execute(c *cli.Context) error {
+	client, err := newDogmaClient(c, gd.repo.remoteURL)
+	if err != nil {
+		return err
+	}
+
+	return gd.executeWithDogmaClient(c, client)
+}
+
+func (gd *getDirectoryCommand) executeWithDogmaClient(_ *cli.Context, client *centraldogma.Client) error {
+	repo := gd.repo
+	entry, err := getRemoteFileEntryWithDogmaClient(client,
+		repo.projName, repo.repoName, repo.path, repo.revision, nil)
+	if err != nil {
+		return err
+	}
+
+	if entry.Type != centraldogma.Directory && repo.isRecursiveDownload {
+		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead", repo.path)
+	}
+
+	basename := creatableFilePath(gd.localFilePath, 1)
+	if err := os.MkdirAll(basename, defaultPermMode); err != nil {
+		return err
+	}
+	return gd.recurseDownload(context.Background(), client, basename, entry)
+}
+
+func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *centraldogma.Client,
+	basename string, rootEntry *centraldogma.Entry) error {
+	if rootEntry.Type != centraldogma.Directory {
+		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead",
+			rootEntry.Path)
+	}
+
+	repo := gd.repo
+	path := rootEntry.Path
+	entries, httpStatusCode, err := client.ListFiles(ctx, repo.projName, repo.repoName, repo.revision, path)
+	if err != nil {
+		return err
+	}
+
+	if httpStatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get the list of files in the /%s/%s%s revision: %q (status: %d)",
+			repo.projName, repo.repoName, path, repo.revision, httpStatusCode)
+	}
+
+	for _, entry := range entries {
+		switch entry.Type {
+		case centraldogma.Directory:
+			if err := gd.recurseDownload(ctx, client, basename, entry); err != nil {
+				return err
+			}
+		default:
+			if err := gd.downloadFile(client, basename, entry.Path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basename, path string) error {
+	repo := gd.repo
+	name, err := gd.constructFilename(basename, path)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(name), defaultPermMode); err != nil {
+		return err
+	}
+	fd, err := os.Create(name)
+	defer func() {
+		if err == nil {
+			err = fd.Close()
+		}
+
+		if err != nil {
+			_ = os.Remove(name)
+		} else {
+			fmt.Fprintf(gd.out, "Downloaded: %s\n", name)
+		}
+	}()
+	if err != nil {
+		return err
+	}
+
+	entry, err := getRemoteFileEntryWithDogmaClient(client,
+		repo.projName, repo.repoName, path, repo.revision, nil)
+	if err != nil {
+		return err
+	}
+
+	if entry.Type == centraldogma.JSON {
+		b := safeMarshalIndent(entry.Content)
+		if _, err = fd.Write(b); err != nil {
+			return err
+		}
+	} else if entry.Type == centraldogma.Text {
+		if _, err = fd.Write(entry.Content); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (gd *getDirectoryCommand) constructFilename(basename, path string) (string, error) {
+	paths := strings.Split(path, "/")
+	if len(paths) < 3 {
+		return "", fmt.Errorf("invalid path: %q can't be processed", path)
+	}
+	cleanPath := filepath.Join(paths[2:]...)
+	return filepath.Join(basename, cleanPath), nil
+}
+
+func getRemoteEntry(c *cli.Context, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
+	entry, err := getRemoteFileEntry(
+		c, repo.remoteURL, repo.projName, repo.repoName, path, repo.revision, jsonPaths)
+	if err != nil {
+		return nil, err
+	}
+
+	return entry, nil
 }
 
 // A catFileCommand shows the content of the file in the specified path matched by the
@@ -117,6 +262,14 @@ func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 	localFilePath := path.Base(repo.path)
 	if len(c.Args()) == 2 && len(c.Args().Get(1)) != 0 {
 		localFilePath = c.Args().Get(1)
+	}
+
+	if repo.isRecursiveDownload {
+		return &getDirectoryCommand{
+			out:           out,
+			repo:          repo,
+			localFilePath: localFilePath,
+		}, nil
 	}
 
 	return &getFileCommand{out: out, repo: repo, localFilePath: localFilePath, jsonPaths: c.StringSlice("jsonpath")}, nil

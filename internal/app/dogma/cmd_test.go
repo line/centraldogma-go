@@ -22,14 +22,27 @@ import (
 	"github.com/urfave/cli"
 )
 
-func newContext(flagArguments []string, connectURL, revision string) *cli.Context {
+func newParentContext(connectURL string) *cli.Context {
 	parentFlags := flag.NewFlagSet("test", 0)
 	parentFlags.String("connect", connectURL, "")
-	parent := cli.NewContext(nil, parentFlags, nil)
+	return cli.NewContext(nil, parentFlags, nil)
+}
+func newContext(flagArguments []string, connectURL, revision string) *cli.Context {
+	parent := newParentContext(connectURL)
 
 	flags := flag.FlagSet{}
 	flags.Parse(flagArguments)
 	flags.String("revision", revision, "")
+	return cli.NewContext(nil, &flags, parent)
+}
+
+func newGetCmdContext(flagArguments []string, connectURL, revision string, isRecursive bool) *cli.Context {
+	parent := newParentContext(connectURL)
+
+	flags := flag.FlagSet{}
+	flags.Parse(flagArguments)
+	flags.String("revision", revision, "")
+	flags.Bool("recursive", isRecursive, "")
 	return cli.NewContext(nil, &flags, parent)
 }
 

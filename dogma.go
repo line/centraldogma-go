@@ -429,12 +429,11 @@ func (c *Client) NormalizeRevision(
 
 // ListFiles returns the list of files that match the given path pattern. A path pattern is a variant of glob:
 //
-//     - "/**": find all files recursively
-//     - "*.json": find all JSON files recursively
-//     - "/foo/*.json": find all JSON files under the directory /foo
-//     - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
-//     - "*.json,/bar/*.txt": use comma to match any patterns
-//
+//   - "/**": find all files recursively
+//   - "*.json": find all JSON files recursively
+//   - "/foo/*.json": find all JSON files under the directory /foo
+//   - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
+//   - "*.json,/bar/*.txt": use comma to match any patterns
 func (c *Client) ListFiles(ctx context.Context,
 	projectName, repoName, revision, pathPattern string) (entries []*Entry, httpStatusCode int, err error) {
 	return c.content.listFiles(ctx, projectName, repoName, revision, pathPattern)
@@ -449,12 +448,11 @@ func (c *Client) GetFile(
 
 // GetFiles returns the files that match the given path pattern. A path pattern is a variant of glob:
 //
-//     - "/**": find all files recursively
-//     - "*.json": find all JSON files recursively
-//     - "/foo/*.json": find all JSON files under the directory /foo
-//     - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
-//     - "*.json,/bar/*.txt": use comma to match any patterns
-//
+//   - "/**": find all files recursively
+//   - "*.json": find all JSON files recursively
+//   - "/foo/*.json": find all JSON files under the directory /foo
+//   - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
+//   - "*.json,/bar/*.txt": use comma to match any patterns
 func (c *Client) GetFiles(ctx context.Context,
 	projectName, repoName, revision, pathPattern string) (entries []*Entry, httpStatusCode int, err error) {
 	return c.content.getFiles(ctx, projectName, repoName, revision, pathPattern)
@@ -463,11 +461,11 @@ func (c *Client) GetFiles(ctx context.Context,
 // GetHistory returns the history of the files that match the given path pattern. A path pattern is
 // a variant of glob:
 //
-//     - "/**": find all files recursively
-//     - "*.json": find all JSON files recursively
-//     - "/foo/*.json": find all JSON files under the directory /foo
-//     - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
-//     - "*.json,/bar/*.txt": use comma to match any patterns
+//   - "/**": find all files recursively
+//   - "*.json": find all JSON files recursively
+//   - "/foo/*.json": find all JSON files under the directory /foo
+//   - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
+//   - "*.json,/bar/*.txt": use comma to match any patterns
 //
 // If the from and to are not specified, this will return the history from the init to the latest revision.
 func (c *Client) GetHistory(ctx context.Context,
@@ -486,11 +484,11 @@ func (c *Client) GetDiff(ctx context.Context,
 // GetDiffs returns the diffs of the files that match the given path pattern. A path pattern is
 // a variant of glob:
 //
-//     - "/**": find all files recursively
-//     - "*.json": find all JSON files recursively
-//     - "/foo/*.json": find all JSON files under the directory /foo
-//     - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
-//     - "*.json,/bar/*.txt": use comma to match any patterns
+//   - "/**": find all files recursively
+//   - "*.json": find all JSON files recursively
+//   - "/foo/*.json": find all JSON files under the directory /foo
+//   - "/&#42;/foo.txt": find all files named foo.txt at the second depth level
+//   - "*.json,/bar/*.txt": use comma to match any patterns
 //
 // If the from and to are not specified, this will return the diffs from the init to the latest revision.
 func (c *Client) GetDiffs(ctx context.Context,
@@ -530,27 +528,27 @@ func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer
 // Manually closing returned channel is unsafe and may cause sending on closed channel error.
 // Usage:
 //
-//    query := &Query{Path: "/a.json", Type: Identity}
-//    ctx := context.Background()
-//    changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Minute)
-//    if err != nil {
-//		 panic(err)
-//    }
-//    defer closer() // stop watching and release underlying resources.
+//	   query := &Query{Path: "/a.json", Type: Identity}
+//	   ctx := context.Background()
+//	   changes, closer, err := client.WatchFile(ctx, "foo", "bar", query, 2 * time.Minute)
+//	   if err != nil {
+//			 panic(err)
+//	   }
+//	   defer closer() // stop watching and release underlying resources.
 //
-//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//	   /* close(changes) */ // manually closing is unsafe, don't do this.
 //
-//    for {
-//        select {
-//          case <-ctx.Done():
-//             ...
+//	   for {
+//	       select {
+//	         case <-ctx.Done():
+//	            ...
 //
-//          case change := <-changes:
-//             // got change
-//             json.Unmarshal(change.Entry.Content, &expect)
-//             ...
-//        }
-//    }
+//	         case change := <-changes:
+//	            // got change
+//	            json.Unmarshal(change.Entry.Content, &expect)
+//	            ...
+//	       }
+//	   }
 func (c *Client) WatchFile(
 	ctx context.Context,
 	projectName, repoName string, query *Query,
@@ -577,27 +575,27 @@ func (c *Client) WatchFile(
 // Manually closing returned channel is unsafe and may cause sending on closed channel error.
 // Usage:
 //
-//    query := &Query{Path: "/a.json", Type: Identity}
-//    ctx := context.Background()
-//    changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Minute)
-//    if err != nil {
-//		 panic(err)
-//    }
-//    defer closer() // stop watching and release underlying resources.
+//	   query := &Query{Path: "/a.json", Type: Identity}
+//	   ctx := context.Background()
+//	   changes, closer, err := client.WatchRepository(ctx, "foo", "bar", "/*.json", 2 * time.Minute)
+//	   if err != nil {
+//			 panic(err)
+//	   }
+//	   defer closer() // stop watching and release underlying resources.
 //
-//    /* close(changes) */ // manually closing is unsafe, don't do this.
+//	   /* close(changes) */ // manually closing is unsafe, don't do this.
 //
-//    for {
-//        select {
-//          case <-ctx.Done():
-//             ...
+//	   for {
+//	       select {
+//	         case <-ctx.Done():
+//	            ...
 //
-//          case change := <-changes:
-//             // got change
-//             json.Unmarshal(change.Entry.Content, &expect)
-//             ...
-//        }
-//    }
+//	         case change := <-changes:
+//	            // got change
+//	            json.Unmarshal(change.Entry.Content, &expect)
+//	            ...
+//	       }
+//	   }
 func (c *Client) WatchRepository(
 	ctx context.Context,
 	projectName, repoName, pathPattern string,
@@ -619,14 +617,14 @@ func (c *Client) WatchRepository(
 // FileWatcher returns a Watcher which notifies its listeners when the result of the given Query becomes
 // available or changes. For example:
 //
-//    query := &Query{Path: "/a.json", Type: Identity}
-//    watcher := client.FileWatcher("foo", "bar", query)
+//	query := &Query{Path: "/a.json", Type: Identity}
+//	watcher := client.FileWatcher("foo", "bar", query)
 //
-//    myCh := make(chan interface{})
-//    watcher.Watch(func(revision int, value interface{}) {
-//        myCh <- value
-//    })
-//    myValue := <-myCh
+//	myCh := make(chan interface{})
+//	watcher.Watch(func(revision int, value interface{}) {
+//	    myCh <- value
+//	})
+//	myValue := <-myCh
 func (c *Client) FileWatcher(projectName, repoName string, query *Query) (*Watcher, error) {
 	fw, err := c.watch.fileWatcher(context.Background(), projectName, repoName, query)
 	if err != nil {
@@ -639,13 +637,13 @@ func (c *Client) FileWatcher(projectName, repoName string, query *Query) (*Watch
 // RepoWatcher returns a Watcher which notifies its listeners when the repository that matched the given
 // pathPattern becomes available or changes. For example:
 //
-//    watcher := client.RepoWatcher("foo", "bar", "/*.json")
+//	watcher := client.RepoWatcher("foo", "bar", "/*.json")
 //
-//    myCh := make(chan interface{})
-//    watcher.Watch(func(revision int, value interface{}) {
-//        myCh <- value
-//    })
-//    myValue := <-myCh
+//	myCh := make(chan interface{})
+//	watcher.Watch(func(revision int, value interface{}) {
+//	    myCh <- value
+//	})
+//	myValue := <-myCh
 func (c *Client) RepoWatcher(projectName, repoName, pathPattern string) (*Watcher, error) {
 	rw, err := c.watch.repoWatcher(context.Background(), projectName, repoName, pathPattern)
 	if err != nil {
@@ -657,17 +655,19 @@ func (c *Client) RepoWatcher(projectName, repoName, pathPattern string) (*Watche
 
 // SetMetricCollector sets metric collector for the client.
 // For example, with Prometheus:
-//     config := centraldogma.DefaultMetricCollectorConfig("client_name")
-//     metricCollector := centraldogma.GlobalPrometheusMetricCollector(config)
-//     client.SetMetricCollector(metricCollector)
+//
+//	config := centraldogma.DefaultMetricCollectorConfig("client_name")
+//	metricCollector := centraldogma.GlobalPrometheusMetricCollector(config)
+//	client.SetMetricCollector(metricCollector)
 //
 // Or Statsd:
-//     config := centraldogma.DefaultMetricCollectorConfig("client_name")
-//     metricCollector, err := centraldogma.StatsdMetricCollector(config, "127.0.0.1:8125")
-//     if err != nil {
-//         panic(err)
-//     }
-//     client.SetMetricCollector(metricCollector)
+//
+//	config := centraldogma.DefaultMetricCollectorConfig("client_name")
+//	metricCollector, err := centraldogma.StatsdMetricCollector(config, "127.0.0.1:8125")
+//	if err != nil {
+//	    panic(err)
+//	}
+//	client.SetMetricCollector(metricCollector)
 func (c *Client) SetMetricCollector(m *metrics.Metrics) {
 	c.metricCollector = m
 }

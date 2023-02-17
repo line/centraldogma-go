@@ -58,10 +58,10 @@ func TestNewNormalizeCommand(t *testing.T) {
 		case *normalizeRevisionCommand:
 			got2 := normalizeRevisionCommand(*comType)
 			if !reflect.DeepEqual(got2, test.want) {
-				t.Errorf("newNormalizeCommand(%q) = %q, want: %q", test.arguments, got2, test.want)
+				t.Errorf("newNormalizeCommand(%+v) = %+v, want: %+v", test.arguments, got2, test.want)
 			}
 		default:
-			t.Errorf("newNormalizeCommand(%q) = %q, want: %q", test.arguments, got, test.want)
+			t.Errorf("newNormalizeCommand(%+v) = %+v, want: %+v", test.arguments, got, test.want)
 		}
 	}
 }
