@@ -24,7 +24,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.linecorp.com/centraldogma"
 )
 
@@ -62,7 +62,7 @@ type repositoryRequestInfo struct {
 // newRepositoryRequestInfo creates a repositoryRequestInfo.
 func newRepositoryRequestInfo(c *cli.Context) (repositoryRequestInfo, error) {
 	repo := repositoryRequestInfo{path: "/", revision: "-1"}
-	if len(c.Args()) == 0 {
+	if c.Args().Len() == 0 {
 		return repo, newCommandLineError(c)
 	}
 	split := splitPath(c.Args().First())
@@ -70,7 +70,7 @@ func newRepositoryRequestInfo(c *cli.Context) (repositoryRequestInfo, error) {
 		return repo, newCommandLineError(c)
 	}
 
-	remoteURL, err := getRemoteURL(c.Parent().String("connect"))
+	remoteURL, err := getRemoteURL(c.String("connect"))
 	if err != nil {
 		return repo, err
 	}
@@ -164,7 +164,7 @@ func newDogmaClient(c *cli.Context, baseURL string) (client *centraldogma.Client
 		return centraldogma.NewClientWithToken(baseURL, "anonymous", nil)
 	}
 
-	token := c.Parent().String("token")
+	token := c.String("token")
 	if len(token) != 0 {
 		if client, err = centraldogma.NewClientWithToken(baseURL, token, nil); err != nil {
 			return nil, err

@@ -20,7 +20,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // A lsProjectCommand lists all the projects on the remote Central Dogma server.
@@ -108,13 +108,13 @@ func (lsp *lsPathCommand) execute(c *cli.Context) error {
 // newLSCommand creates one of the ls project, repository, and path commands according to the
 // command arguments from the CLI. If the revision is not specified, -1 will be set by default.
 func newLSCommand(c *cli.Context, out io.Writer, style PrintStyle) (Command, error) {
-	remoteURL, err := getRemoteURL(c.Parent().String("connect"))
+	remoteURL, err := getRemoteURL(c.String("connect"))
 	if err != nil {
 		return nil, err
 	}
 
 	ca := c.Args()
-	if len(ca) > 1 { // If there are no arguments, it is a list projects command.
+	if ca.Len() > 1 { // If there are no arguments, it is a list projects command.
 		return nil, newCommandLineError(c)
 	}
 

@@ -27,7 +27,7 @@ import (
 
 	dogma "go.linecorp.com/centraldogma"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 type watchCommand struct {

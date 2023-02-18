@@ -22,7 +22,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.linecorp.com/centraldogma"
 )
 
@@ -78,10 +78,10 @@ func (nr *newRepositoryCommand) execute(c *cli.Context) error {
 }
 
 func newNewCommand(c *cli.Context, out io.Writer) (Command, error) {
-	if len(c.Args()) != 1 {
+	if c.Args().Len() != 1 {
 		return nil, newCommandLineError(c)
 	}
-	remoteURL, err := getRemoteURL(c.Parent().String("connect"))
+	remoteURL, err := getRemoteURL(c.String("connect"))
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (pf *putFileCommand) execute(c *cli.Context) error {
 }
 
 func newPutCommand(c *cli.Context, out io.Writer) (Command, error) {
-	if len(c.Args()) != 2 {
+	if c.Args().Len() != 2 {
 		return nil, newCommandLineError(c)
 	}
 

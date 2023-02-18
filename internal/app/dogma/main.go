@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -33,19 +33,19 @@ func main() {
 	app.HelpName = "dogma"
 	app.Version = version + " (" + shortHash + ")"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name: "connect, c",
 			Usage: "Specifies host or IP address with port to connect to:" +
 				"[hostname:port] or [http://hostname:port]",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "token, t",
 			Usage: "Specifies an authorization token to access resources on the server",
 		},
 	}
 
 	app.Commands = CLICommands()
-	cli.HelpFlag = cli.BoolFlag{
+	cli.HelpFlag = &cli.BoolFlag{
 		Name:  "help, h",
 		Usage: "Shows help",
 	}
