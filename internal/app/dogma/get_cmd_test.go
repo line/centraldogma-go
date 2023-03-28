@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -340,37 +341,37 @@ func TestGetDirectoryCommand_constructFilename(t *testing.T) {
 			Name:             "download foo from foo",
 			Path:             "/foo/foo.json",
 			UserQueryPath:    "/foo",
-			ExpectedFilename: "base/foo.json",
+			ExpectedFilename: filepath.Join("base", "foo.json"),
 		},
 		{
 			Name:             "download foo-bar from foo",
 			Path:             "/foo/bar/bar.json",
 			UserQueryPath:    "/foo",
-			ExpectedFilename: "base/bar/bar.json",
+			ExpectedFilename: filepath.Join("base", "bar", "bar.json"),
 		},
 		{
 			Name:             "download foo-bar-baz from foo",
 			Path:             "/foo/bar/baz/baz.json",
 			UserQueryPath:    "/foo",
-			ExpectedFilename: "base/bar/baz/baz.json",
+			ExpectedFilename: filepath.Join("base", "bar", "baz", "baz.json"),
 		},
 		{
 			Name:             "download foo-bar from bar",
 			Path:             "/foo/bar/bar.json",
 			UserQueryPath:    "/foo/bar",
-			ExpectedFilename: "base/bar.json",
+			ExpectedFilename: filepath.Join("base", "bar.json"),
 		},
 		{
 			Name:             "download foo-bar-baz from bar",
 			Path:             "/foo/bar/baz/baz.json",
 			UserQueryPath:    "/foo/bar",
-			ExpectedFilename: "base/baz/baz.json",
+			ExpectedFilename: filepath.Join("base", "baz", "baz.json"),
 		},
 		{
 			Name:             "download foo-bar-baz from baz",
 			Path:             "/foo/bar/baz/baz.json",
 			UserQueryPath:    "/foo/bar/baz",
-			ExpectedFilename: "base/baz.json",
+			ExpectedFilename: filepath.Join("base", "baz.json"),
 		},
 	}
 
