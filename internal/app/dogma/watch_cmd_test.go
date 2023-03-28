@@ -115,7 +115,7 @@ func TestListenerOption(t *testing.T) {
 	if !strings.Contains(env, "DOGMA_WATCH_EVENT_PATH="+entry.Path) {
 		t.Errorf("No path information found in environment %s", env)
 	}
-	if !strings.Contains(env, "DOGMA_WATCH_EVENT_REV="+strconv.FormatInt(int64(entry.Revision+1), 10)) {
+	if !strings.Contains(env, "DOGMA_WATCH_EVENT_REV="+strconv.FormatInt(entry.Revision+1, 10)) {
 		t.Errorf("No revision information found in environment %s", env)
 	}
 	if !strings.Contains(env, "DOGMA_WATCH_EVENT_CONTENT_TYPE="+entry.Type.String()) {
