@@ -19,64 +19,64 @@ import (
 	"io"
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-var commitMessageFlag = cli.StringFlag{
+var commitMessageFlag = &cli.StringFlag{
 	Name:  "message, m",
 	Usage: "Specifies the commit message",
 }
 
-var revisionFlag = cli.StringFlag{
+var revisionFlag = &cli.StringFlag{
 	Name:  "revision, r",
 	Usage: "Specifies the revision to operate",
 }
 
-var recursiveFlag = cli.BoolFlag{
+var recursiveFlag = &cli.BoolFlag{
 	Name:  "recursive",
 	Usage: "Specifies whether to download a whole directory",
 }
 
-var jsonPathFlag = cli.StringSliceFlag{
+var jsonPathFlag = &cli.StringSliceFlag{
 	Name:  "jsonpath, j",
 	Usage: "Specifies the JSON path expressions to apply",
 }
 
-var fromRevisionFlag = cli.StringFlag{
+var fromRevisionFlag = &cli.StringFlag{
 	Name:  "from",
 	Usage: "Specifies the revision to apply from",
 }
 
-var toRevisionFlag = cli.StringFlag{
+var toRevisionFlag = &cli.StringFlag{
 	Name:  "to",
 	Usage: "Specifies the revision to apply until",
 }
 
-var maxCommitsFlag = cli.IntFlag{
+var maxCommitsFlag = &cli.IntFlag{
 	Name:  "max-commits",
 	Usage: "Specifies the number of maximum commits to fetch",
 }
 
-var streamingFlag = cli.BoolFlag{
+var streamingFlag = &cli.BoolFlag{
 	Name:  "streaming, s",
 	Usage: "Specifies whether to keep watching the file",
 }
 
-var listenerFlag = cli.StringFlag{
+var listenerFlag = &cli.StringFlag{
 	Name:  "listener, l",
 	Usage: "Specifies the `executable` path that handles watch events",
 }
 
 var printFormatFlags = []cli.Flag{
-	cli.BoolFlag{
+	&cli.BoolFlag{
 		Name:   "pretty",
 		Hidden: true,
 	},
-	cli.BoolFlag{
+	&cli.BoolFlag{
 		Name:   "simple",
 		Hidden: true,
 	},
-	cli.BoolFlag{
+	&cli.BoolFlag{
 		Name:   "json",
 		Hidden: true,
 	},
@@ -122,13 +122,13 @@ func printWithStyle(out io.Writer, data interface{}, format PrintStyle) {
 	fmt.Fprintf(out, "%s\n", buf)
 }
 
-func newCommandLineError(c *cli.Context) *cli.ExitError {
+func newCommandLineError(c *cli.Context) cli.ExitCoder {
 	com := c.Command
-	return cli.NewExitError("usage: "+com.Name+" "+com.ArgsUsage, 1)
+	return cli.Exit("usage: "+com.Name+" "+com.ArgsUsage, 1)
 }
 
-func CLICommands() []cli.Command {
-	return []cli.Command{
+func CLICommands() []*cli.Command {
+	return []*cli.Command{
 		{
 			Name:      "ls",
 			Usage:     "Lists the projects, repositories or files",

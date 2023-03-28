@@ -20,7 +20,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // A diffCommand returns a diff of the specified path between the from revision and to revision.

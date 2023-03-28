@@ -32,7 +32,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.linecorp.com/centraldogma"
 )
 

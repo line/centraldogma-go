@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.linecorp.com/centraldogma"
 )
 
@@ -260,7 +260,7 @@ func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 	}
 
 	localFilePath := path.Base(repo.path)
-	if len(c.Args()) == 2 && len(c.Args().Get(1)) != 0 {
+	if c.Args().Len() == 2 && len(c.Args().Get(1)) != 0 {
 		localFilePath = c.Args().Get(1)
 	}
 
