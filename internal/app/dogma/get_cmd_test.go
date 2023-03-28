@@ -145,7 +145,7 @@ func TestGetRecursive(t *testing.T) {
 			remoteURL:           remoteURL,
 			projName:            "abcd",
 			repoName:            "repo1",
-			path:                "x",
+			path:                "/x",
 			revision:            "",
 			isRecursiveDownload: true,
 		},
@@ -187,5 +187,74 @@ func TestGetRecursive(t *testing.T) {
 			t.Errorf("%+q content's name is expected to ended with: %+q, got: %+q",
 				downloadedFile, target, m["name"])
 		}
+	}
+}
+
+func TestGetDirectoryCommand_constructFilename(t *testing.T) {
+	cmd := &getDirectoryCommand{}
+
+	const basename = "base"
+
+	tt := []struct {
+		_                struct{}
+		Name             string
+		Path             string
+		UserQueryPath    string
+		ExpectedFilename string
+	}{
+		{
+			Name:             "download foo from foo",
+			Path:             "/foo/foo.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: "base/foo.json",
+		},
+		{
+			Name:             "download foo-bar from foo",
+			Path:             "/foo/bar/bar.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: "base/bar/bar.json",
+		},
+		{
+			Name:             "download foo-bar-baz from foo",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: "base/bar/baz/baz.json",
+		},
+		{
+			Name:             "download foo-bar from bar",
+			Path:             "/foo/bar/bar.json",
+			UserQueryPath:    "/foo/bar",
+			ExpectedFilename: "base/bar.json",
+		},
+		{
+			Name:             "download foo-bar-baz from bar",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo/bar",
+			ExpectedFilename: "base/baz/baz.json",
+		},
+		{
+			Name:             "download foo-bar-baz from baz",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo/bar/baz",
+			ExpectedFilename: "base/baz.json",
+		},
+	}
+
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			actualFilename, actualError := cmd.constructFilename(basename, tc.Path, tc.UserQueryPath)
+			if actualError != nil {
+				t.Errorf("not expecting any error: %+q", actualError)
+				return
+			}
+
+			if actualFilename != tc.ExpectedFilename {
+				t.Errorf("expected: %+q, actual: %+q", tc.ExpectedFilename, actualFilename)
+				return
+			}
+		})
 	}
 }

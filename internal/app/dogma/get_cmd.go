@@ -138,7 +138,7 @@ func (gd *getDirectoryCommand) recurseDownload(c *cli.Context, client *centraldo
 				return err
 			}
 		default:
-			if err := gd.downloadFile(c, basename, entry.Path); err != nil {
+			if err := gd.downloadFile(c, basename, entry.Path, repo.path); err != nil {
 				return err
 			}
 		}
@@ -146,9 +146,9 @@ func (gd *getDirectoryCommand) recurseDownload(c *cli.Context, client *centraldo
 	return nil
 }
 
-func (gd *getDirectoryCommand) downloadFile(c *cli.Context, basename, path string) error {
+func (gd *getDirectoryCommand) downloadFile(c *cli.Context, basename, path, userQueryPath string) error {
 	repo := gd.repo
-	name, err := gd.constructFilename(basename, path)
+	name, err := gd.constructFilename(basename, path, userQueryPath)
 	if err != nil {
 		return err
 	}
@@ -192,12 +192,13 @@ func (gd *getDirectoryCommand) downloadFile(c *cli.Context, basename, path strin
 	return nil
 }
 
-func (gd *getDirectoryCommand) constructFilename(basename, path string) (string, error) {
+func (gd *getDirectoryCommand) constructFilename(basename, path, userQueryPath string) (string, error) {
+	path = strings.TrimPrefix(path, userQueryPath)
 	paths := strings.Split(path, "/")
-	if len(paths) < 3 {
+	if len(paths) < 2 {
 		return "", fmt.Errorf("invalid path: %q can't be processed", path)
 	}
-	cleanPath := filepath.Join(paths[2:]...)
+	cleanPath := filepath.Join(paths[1:]...)
 	return filepath.Join(basename, cleanPath), nil
 }
 
