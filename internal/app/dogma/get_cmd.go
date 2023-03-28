@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -84,7 +83,8 @@ type getDirectoryCommand struct {
 }
 
 func (gd *getDirectoryCommand) execute(c *cli.Context) error {
-	client, err := newDogmaClient(c, gd.repo.remoteURL)
+	repo := gd.repo
+	client, err := newDogmaClient(c, repo.remoteURL)
 	if err != nil {
 		return err
 	}
@@ -94,55 +94,37 @@ func (gd *getDirectoryCommand) execute(c *cli.Context) error {
 		c.Context = putDogmaClientTo(c.Context, client)
 	}
 
-	repo := gd.repo
-	entry, err := getRemoteFileEntry(c, gd.repo.remoteURL,
-		repo.projName, repo.repoName, repo.path, repo.revision, nil)
-	if err != nil {
-		return err
-	}
-
-	if entry.Type != centraldogma.Directory && repo.isRecursiveDownload {
-		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead", repo.path)
-	}
-
-	basename := creatableFilePath(gd.localFilePath, 1)
-	if err := os.MkdirAll(basename, defaultPermMode); err != nil {
-		return err
-	}
-	return gd.recurseDownload(c, client, basename, entry)
+	basePath := creatableFilePath(gd.localFilePath, 1)
+	hasGlobSuffix := strings.HasSuffix(repo.path, "**")
+	return gd.recurseDownload(c, client, basePath, repo.path, hasGlobSuffix)
 }
 
-func (gd *getDirectoryCommand) recurseDownload(c *cli.Context, client *centraldogma.Client,
-	basename string, rootEntry *centraldogma.Entry) error {
-	if rootEntry.Type != centraldogma.Directory {
-		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead",
-			rootEntry.Path)
-	}
-
+func (gd *getDirectoryCommand) recurseDownload(c *cli.Context, client *centraldogma.Client, basePath, path string, hasGlobSuffix bool) error {
 	repo := gd.repo
-	path := rootEntry.Path
-	entries, httpStatusCode, err := client.ListFiles(c.Context, repo.projName, repo.repoName, repo.revision, path)
+	entries, _, err := client.ListFiles(c.Context, repo.projName, repo.repoName, repo.revision, path)
 	if err != nil {
 		return err
 	}
 
-	if httpStatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get the list of files in the /%s/%s%s revision: %q (status: %d)",
-			repo.projName, repo.repoName, path, repo.revision, httpStatusCode)
+	if entries == nil {
+		return fmt.Errorf("directory entries not found for query: %+q", repo.path)
 	}
 
 	for _, entry := range entries {
 		switch entry.Type {
 		case centraldogma.Directory:
-			if err := gd.recurseDownload(c, client, basename, entry); err != nil {
-				return err
+			// no need to recursive
+			if hasGlobSuffix {
+				continue
 			}
+			gd.recurseDownload(c, client, basePath, entry.Path+"/**", true)
 		default:
-			if err := gd.downloadFile(c, basename, entry.Path, repo.path); err != nil {
+			if err := gd.downloadFile(c, basePath, entry.Path, gd.repo.path); err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -193,13 +175,9 @@ func (gd *getDirectoryCommand) downloadFile(c *cli.Context, basename, path, user
 }
 
 func (gd *getDirectoryCommand) constructFilename(basename, path, userQueryPath string) (string, error) {
+	userQueryPath = strings.TrimSuffix(userQueryPath, "/**")
 	path = strings.TrimPrefix(path, userQueryPath)
-	paths := strings.Split(path, "/")
-	if len(paths) < 2 {
-		return "", fmt.Errorf("invalid path: %q can't be processed", path)
-	}
-	cleanPath := filepath.Join(paths[1:]...)
-	return filepath.Join(basename, cleanPath), nil
+	return filepath.Join(basename, path), nil
 }
 
 func getRemoteEntry(c *cli.Context, repo *repositoryRequestInfo, path string, jsonPaths []string) (*centraldogma.Entry, error) {
@@ -263,6 +241,15 @@ func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 	localFilePath := path.Base(repo.path)
 	if c.Args().Len() == 2 && len(c.Args().Get(1)) != 0 {
 		localFilePath = c.Args().Get(1)
+	}
+
+	if localFilePath == "/" || repo.path == "/**" {
+		localFilePath = repo.repoName
+	}
+
+	if localFilePath == "**" {
+		paths := strings.Split(repo.path, "/")
+		localFilePath = paths[len(paths)-2]
 	}
 
 	if repo.isRecursiveDownload {
