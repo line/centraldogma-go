@@ -157,7 +157,8 @@ func TestGetRecursive(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	if err := cmd.executeWithDogmaClient(c, client); err != nil {
+	c.Context = putDogmaClientTo(c.Context, client)
+	if err := cmd.execute(c); err != nil {
 		t.Errorf(err.Error())
 	}
 

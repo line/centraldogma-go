@@ -17,6 +17,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -267,4 +268,20 @@ func safeMarshalIndent(src []byte) []byte {
 		return dst.Bytes()
 	}
 	return src
+}
+
+type dogmaClientCtxKey struct{}
+
+var dogmaClientCtxKeyInstance = &dogmaClientCtxKey{}
+
+func getDogmaClientFrom(ctx context.Context) *centraldogma.Client {
+	v, ok := ctx.Value(dogmaClientCtxKeyInstance).(*centraldogma.Client)
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+func putDogmaClientTo(ctx context.Context, client *centraldogma.Client) context.Context {
+	return context.WithValue(ctx, dogmaClientCtxKeyInstance, client)
 }

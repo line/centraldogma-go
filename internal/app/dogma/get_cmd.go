@@ -84,16 +84,21 @@ type getDirectoryCommand struct {
 	localFilePath string
 }
 
+func (gd *getDirectoryCommand) getOrCreateDogmaClient(c *cli.Context) (client *centraldogma.Client, err error) {
+	client = getDogmaClientFrom(c.Context)
+	if client == nil {
+		client, err = newDogmaClient(c, gd.repo.remoteURL)
+	}
+
+	return
+}
+
 func (gd *getDirectoryCommand) execute(c *cli.Context) error {
-	client, err := newDogmaClient(c, gd.repo.remoteURL)
+	client, err := gd.getOrCreateDogmaClient(c)
 	if err != nil {
 		return err
 	}
 
-	return gd.executeWithDogmaClient(c, client)
-}
-
-func (gd *getDirectoryCommand) executeWithDogmaClient(_ *cli.Context, client *centraldogma.Client) error {
 	repo := gd.repo
 	entry, err := getRemoteFileEntryWithDogmaClient(client,
 		repo.projName, repo.repoName, repo.path, repo.revision, nil)
