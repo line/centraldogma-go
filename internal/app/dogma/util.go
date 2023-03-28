@@ -282,6 +282,11 @@ func getDogmaClientFrom(ctx context.Context) *centraldogma.Client {
 	return v
 }
 
+func hasDogmaClient(ctx context.Context) bool {
+	_, ok := ctx.Value(dogmaClientCtxKeyInstance).(*centraldogma.Client)
+	return ok
+}
+
 func putDogmaClientTo(ctx context.Context, client *centraldogma.Client) context.Context {
 	return context.WithValue(ctx, dogmaClientCtxKeyInstance, client)
 }

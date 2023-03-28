@@ -15,7 +15,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -84,23 +83,19 @@ type getDirectoryCommand struct {
 	localFilePath string
 }
 
-func (gd *getDirectoryCommand) getOrCreateDogmaClient(c *cli.Context) (client *centraldogma.Client, err error) {
-	client = getDogmaClientFrom(c.Context)
-	if client == nil {
-		client, err = newDogmaClient(c, gd.repo.remoteURL)
-	}
-
-	return
-}
-
 func (gd *getDirectoryCommand) execute(c *cli.Context) error {
-	client, err := gd.getOrCreateDogmaClient(c)
+	client, err := newDogmaClient(c, gd.repo.remoteURL)
 	if err != nil {
 		return err
 	}
 
+	// to avoid new client creation
+	if !hasDogmaClient(c.Context) {
+		c.Context = putDogmaClientTo(c.Context, client)
+	}
+
 	repo := gd.repo
-	entry, err := getRemoteFileEntryWithDogmaClient(client,
+	entry, err := getRemoteFileEntry(c, gd.repo.remoteURL,
 		repo.projName, repo.repoName, repo.path, repo.revision, nil)
 	if err != nil {
 		return err
@@ -114,10 +109,10 @@ func (gd *getDirectoryCommand) execute(c *cli.Context) error {
 	if err := os.MkdirAll(basename, defaultPermMode); err != nil {
 		return err
 	}
-	return gd.recurseDownload(context.Background(), client, basename, entry)
+	return gd.recurseDownload(c, client, basename, entry)
 }
 
-func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *centraldogma.Client,
+func (gd *getDirectoryCommand) recurseDownload(c *cli.Context, client *centraldogma.Client,
 	basename string, rootEntry *centraldogma.Entry) error {
 	if rootEntry.Type != centraldogma.Directory {
 		return fmt.Errorf("%+q is not a directory, you might want to remove `--recursive` instead",
@@ -126,7 +121,7 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *cent
 
 	repo := gd.repo
 	path := rootEntry.Path
-	entries, httpStatusCode, err := client.ListFiles(ctx, repo.projName, repo.repoName, repo.revision, path)
+	entries, httpStatusCode, err := client.ListFiles(c.Context, repo.projName, repo.repoName, repo.revision, path)
 	if err != nil {
 		return err
 	}
@@ -139,11 +134,11 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *cent
 	for _, entry := range entries {
 		switch entry.Type {
 		case centraldogma.Directory:
-			if err := gd.recurseDownload(ctx, client, basename, entry); err != nil {
+			if err := gd.recurseDownload(c, client, basename, entry); err != nil {
 				return err
 			}
 		default:
-			if err := gd.downloadFile(client, basename, entry.Path); err != nil {
+			if err := gd.downloadFile(c, basename, entry.Path); err != nil {
 				return err
 			}
 		}
@@ -151,7 +146,7 @@ func (gd *getDirectoryCommand) recurseDownload(ctx context.Context, client *cent
 	return nil
 }
 
-func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basename, path string) error {
+func (gd *getDirectoryCommand) downloadFile(c *cli.Context, basename, path string) error {
 	repo := gd.repo
 	name, err := gd.constructFilename(basename, path)
 	if err != nil {
@@ -177,7 +172,7 @@ func (gd *getDirectoryCommand) downloadFile(client *centraldogma.Client, basenam
 		return err
 	}
 
-	entry, err := getRemoteFileEntryWithDogmaClient(client,
+	entry, err := getRemoteFileEntry(c, gd.repo.remoteURL,
 		repo.projName, repo.repoName, path, repo.revision, nil)
 	if err != nil {
 		return err
