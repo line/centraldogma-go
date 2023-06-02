@@ -245,9 +245,7 @@ func newGetCommand(c *cli.Context, out io.Writer) (Command, error) {
 
 	if localFilePath == "/" || repo.path == "/**" {
 		localFilePath = repo.repoName
-	}
-
-	if localFilePath == "**" {
+	} else if localFilePath == "**" {
 		paths := strings.Split(repo.path, "/")
 		localFilePath = paths[len(paths)-2]
 	}
