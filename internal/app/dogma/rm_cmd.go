@@ -20,7 +20,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"go.linecorp.com/centraldogma"
 )
 
