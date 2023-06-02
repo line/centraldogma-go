@@ -14,4 +14,4 @@ Note that this ICLA covers [Central Dogma project](https://github.com/line/centr
 Please [contact us](mailto:dl_oss_dev@linecorp.com) if you need the CCLA (corporate contributor license agreement).
 
 ### Code of conduct
-We expect contributors to follow [our code of conduct](https://github.com/line/centraldogma-go/blob/master/CODE_OF_CONDUCT.md).
+We expect contributors to follow [our code of conduct](https://github.com/line/centraldogma-go/blob/main/CODE_OF_CONDUCT.md).
