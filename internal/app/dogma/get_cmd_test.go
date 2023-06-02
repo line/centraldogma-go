@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -85,6 +86,62 @@ func TestNewGetCommand(t *testing.T) {
 				localFilePath: "a.txt",
 			},
 		},
+		{
+			arguments:   []string{"foo/bar/**"},
+			revision:    "",
+			isRecursive: true,
+			want: getDirectoryCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/**", revision: "-1",
+					isRecursiveDownload: true,
+				},
+				localFilePath: "bar",
+			},
+		},
+		{
+			arguments:   []string{"foo/bar/f**"},
+			revision:    "",
+			isRecursive: true,
+			want: getDirectoryCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/f**", revision: "-1",
+					isRecursiveDownload: true,
+				},
+				localFilePath: "f**",
+			},
+		},
+		{
+			arguments:   []string{"foo/bar/f**/**"},
+			revision:    "",
+			isRecursive: true,
+			want: getDirectoryCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/f**/**", revision: "-1",
+					isRecursiveDownload: true,
+				},
+				localFilePath: "f**",
+			},
+		},
+		{
+			arguments:   []string{"foo/bar/**/baz"},
+			revision:    "",
+			isRecursive: true,
+			want: getDirectoryCommand{
+				out: os.Stdout,
+				repo: repositoryRequestInfo{
+					remoteURL: defaultRemoteURL, projName: "foo", repoName: "bar",
+					path: "/**/baz", revision: "-1",
+					isRecursiveDownload: true,
+				},
+				localFilePath: "baz",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -108,8 +165,11 @@ func TestNewGetCommand(t *testing.T) {
 	}
 }
 
+var mockServer *httptest.Server
+
 func mockedCentralDogmaServerForRecursive() *httptest.Server {
 	responseMap := map[string]string{
+		// file
 		"/contents/x":     `{"revision":1,"path":"/x","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x"}`,
 		"/contents/x/y":   `{"revision":1,"path":"/x/y","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y"}`,
 		"/contents/x/y/z": `{"revision":1,"path":"/x/y/z","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z"}`,
@@ -118,9 +178,32 @@ func mockedCentralDogmaServerForRecursive() *httptest.Server {
 		"/contents/x/y/foo.json":   `{"revision":1,"path":"/x/y/foo.json","type":"JSON","content":{"name":"abcd/repo1/x/y/foo.json"},"url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/foo.json"}`,
 		"/contents/x/y/z/foo.json": `{"revision":1,"path":"/x/y/z/foo.json","type":"JSON","content":{"name":"abcd/repo1/x/y/z/foo.json"},"url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z/foo.json"}`,
 
-		"/list/x":     `[{"revision":1,"path":"/x/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/foo.json"},{"revision":1,"path":"/x/y","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y"}]`,
-		"/list/x/y":   `[{"revision":1,"path":"/x/y/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/foo.json"},{"revision":1,"path":"/x/y/z","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z"}]`,
+		// dir
+		"/list/x": `[
+			{"revision":1,"path":"/x/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/foo.json"},
+			{"revision":1,"path":"/x/y","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y"}
+		]`,
+
+		"/list/x/y": `[
+			{"revision":1,"path":"/x/y/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/foo.json"},
+			{"revision":1,"path":"/x/y/z","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z"}
+		]`,
+
 		"/list/x/y/z": `[{"revision":1,"path":"/x/y/z/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z/foo.json"}]`,
+
+		// glob
+		"/list/x/**": `[
+			{"revision":1,"path":"/x/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/foo.json"},
+			{"revision":1,"path":"/x/y","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y"},
+			{"revision":1,"path":"/x/y/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/foo.json"},
+			{"revision":1,"path":"/x/y/z","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z"},
+			{"revision":1,"path":"/x/y/z/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z/foo.json"}
+		]`,
+		"/list/x/y/**": `[
+			{"revision":1,"path":"/x/y/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/foo.json"},
+			{"revision":1,"path":"/x/y/z","type":"DIRECTORY","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z"},
+			{"revision":1,"path":"/x/y/z/foo.json","type":"JSON","url":"/api/v1/projects/abcd/repos/repo1/contents/x/y/z/foo.json"}
+		]`,
 	}
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/v1/projects/abcd/repos/repo1")
@@ -128,63 +211,185 @@ func mockedCentralDogmaServerForRecursive() *httptest.Server {
 	}))
 }
 
+func TestMain(m *testing.M) {
+	mockServer = mockedCentralDogmaServerForRecursive()
+
+	exitCode := m.Run()
+	mockServer.Close()
+
+	os.Exit(exitCode)
+}
+
 func TestGetRecursive(t *testing.T) {
-	server := mockedCentralDogmaServerForRecursive()
-	defer server.Close()
-
-	b := make([]byte, 5)
-	rand.Read(b)
-	localFilePath := "/tmp/" + hex.EncodeToString(b)
-	defer os.RemoveAll(localFilePath)
-
-	remoteURL := server.URL
-	c := newGetCmdContext([]string{"abcd/repo1/x", localFilePath}, remoteURL, "", true)
-	cmd := &getDirectoryCommand{
-		out: bufio.NewWriter(new(bytes.Buffer)),
-		repo: repositoryRequestInfo{
-			remoteURL:           remoteURL,
-			projName:            "abcd",
-			repoName:            "repo1",
-			path:                "x",
-			revision:            "",
-			isRecursiveDownload: true,
-		},
-		localFilePath: localFilePath,
-	}
-
-	client, err := centraldogma.NewClientWithToken(server.URL, "anonymous", server.Client().Transport)
+	client, err := centraldogma.NewClientWithToken(mockServer.URL, "anonymous", mockServer.Client().Transport)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	if err := cmd.executeWithDogmaClient(c, client); err != nil {
-		t.Errorf(err.Error())
+	tt := []struct {
+		_        struct{}
+		Name     string
+		ProjName string
+		RepoName string
+		Path     string
+		Targets  []string
+	}{
+		{
+			Name:     "download x",
+			ProjName: "abcd",
+			RepoName: "repo1",
+			Path:     "/x",
+			Targets: []string{
+				"/foo.json",
+				"/y/foo.json",
+				"/y/z/foo.json",
+			},
+		},
+		{
+			Name:     "download x/**",
+			ProjName: "abcd",
+			RepoName: "repo1",
+			Path:     "/x/**",
+			Targets: []string{
+				"/foo.json",
+				"/y/foo.json",
+				"/y/z/foo.json",
+			},
+		},
+		{
+			Name:     "download x/y/**",
+			ProjName: "abcd",
+			RepoName: "repo1",
+			Path:     "/x/y/**",
+			Targets: []string{
+				"/foo.json",
+				"/z/foo.json",
+			},
+		},
 	}
 
-	targets := []string{
-		"/foo.json",
-		"/y/foo.json",
-		"/y/z/foo.json",
+	for i := range tt {
+		tc := tt[i]
+
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			b := make([]byte, 5)
+			rand.Read(b)
+			localFilePath := "/tmp/" + hex.EncodeToString(b)
+			defer os.RemoveAll(localFilePath)
+
+			flagArgs := []string{
+				fmt.Sprintf("%s/%s%s", tc.ProjName, tc.RepoName, tc.Path),
+				localFilePath,
+			}
+			c := newGetCmdContext(flagArgs, mockServer.URL, "", true)
+			cmd := &getDirectoryCommand{
+				out: bufio.NewWriter(new(bytes.Buffer)),
+				repo: repositoryRequestInfo{
+					remoteURL:           mockServer.URL,
+					projName:            tc.ProjName,
+					repoName:            tc.RepoName,
+					path:                tc.Path,
+					revision:            "",
+					isRecursiveDownload: true,
+				},
+				localFilePath: localFilePath,
+			}
+
+			c.Context = putDogmaClientTo(c.Context, client)
+			if err := cmd.execute(c); err != nil {
+				t.Errorf(err.Error())
+			}
+
+			for _, target := range tc.Targets {
+				downloadedFile := localFilePath + target
+				if _, err := os.Stat(downloadedFile); err != nil {
+					t.Errorf("downloaded: %+q file is expected to be exists: %s", downloadedFile, err.Error())
+				}
+
+				b, err := os.ReadFile(downloadedFile)
+				if err != nil {
+					t.Error(err.Error())
+				}
+
+				m := make(map[string]string)
+				if err := json.Unmarshal(b, &m); err != nil {
+					t.Error(err.Error())
+				}
+				if !strings.HasSuffix(m["name"], target) {
+					t.Errorf("%+q content's name is expected to ended with: %+q, got: %+q",
+						downloadedFile, target, m["name"])
+				}
+			}
+		})
+	}
+}
+
+func TestGetDirectoryCommand_constructFilename(t *testing.T) {
+	cmd := &getDirectoryCommand{}
+
+	const basename = "base"
+
+	tt := []struct {
+		_                struct{}
+		Name             string
+		Path             string
+		UserQueryPath    string
+		ExpectedFilename string
+	}{
+		{
+			Name:             "download foo from foo",
+			Path:             "/foo/foo.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: filepath.Join("base", "foo.json"),
+		},
+		{
+			Name:             "download foo-bar from foo",
+			Path:             "/foo/bar/bar.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: filepath.Join("base", "bar", "bar.json"),
+		},
+		{
+			Name:             "download foo-bar-baz from foo",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo",
+			ExpectedFilename: filepath.Join("base", "bar", "baz", "baz.json"),
+		},
+		{
+			Name:             "download foo-bar from bar",
+			Path:             "/foo/bar/bar.json",
+			UserQueryPath:    "/foo/bar",
+			ExpectedFilename: filepath.Join("base", "bar.json"),
+		},
+		{
+			Name:             "download foo-bar-baz from bar",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo/bar",
+			ExpectedFilename: filepath.Join("base", "baz", "baz.json"),
+		},
+		{
+			Name:             "download foo-bar-baz from baz",
+			Path:             "/foo/bar/baz/baz.json",
+			UserQueryPath:    "/foo/bar/baz",
+			ExpectedFilename: filepath.Join("base", "baz.json"),
+		},
 	}
 
-	for _, target := range targets {
-		downloadedFile := localFilePath + target
-		if _, err := os.Stat(downloadedFile); err != nil {
-			t.Errorf("downloaded: %+q file is expected to be exists: %s", downloadedFile, err.Error())
-		}
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
 
-		b, err := os.ReadFile(downloadedFile)
-		if err != nil {
-			t.Error(err.Error())
-		}
+			actualFilename, actualError := cmd.constructFilename(basename, tc.Path, tc.UserQueryPath)
+			if actualError != nil {
+				t.Errorf("not expecting any error: %+q", actualError)
+				return
+			}
 
-		m := make(map[string]string)
-		if err := json.Unmarshal(b, &m); err != nil {
-			t.Error(err.Error())
-		}
-		if !strings.HasSuffix(m["name"], target) {
-			t.Errorf("%+q content's name is expected to ended with: %+q, got: %+q",
-				downloadedFile, target, m["name"])
-		}
+			if actualFilename != tc.ExpectedFilename {
+				t.Errorf("expected: %+q, actual: %+q", tc.ExpectedFilename, actualFilename)
+				return
+			}
+		})
 	}
 }
