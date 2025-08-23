@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: centraldogma-go
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: dogma-cli
+    dir: internal/app/dogma
+    main: .
+    binary: dogma
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Exclude Windows on ARM64 as it's not commonly used
+    ignore:
+      - goos: windows
+        goarch: arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.shortHash={{ .ShortCommit }}
+
+archives:
+  - id: dogma-archives
+    ids:
+      - dogma-cli
+    name_template: "dogma_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "{{ .ArtifactName }}.{{ .Algorithm }}"
+  split: true
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Version }}-SNAPSHOT"
+
+changelog:
+  use: github-native
+
+release:
+  name_template: "{{ .ProjectName }}-{{ .Version }}"
+  prerelease: auto
+  make_latest: true
+  mode: replace
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"

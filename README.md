@@ -135,10 +135,7 @@ func (c *CentralDogmaFile) Watch(ctx context.Context, callback func([]byte)) err
 
 We use [Go Modules](https://github.com/golang/go/wiki/Modules) (formerly known as `vgo`) to manage the dependencies.
 
-```
-# Opt-in for Go Modules.
-$ export GO111MODULE=on
-
+```shell
 # Set up the GOPATH.
 $ mkdir go
 $ export GOPATH="$(pwd)/go"
