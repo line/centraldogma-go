@@ -62,7 +62,7 @@ release:
   name_template: "{{ .ProjectName }}-{{ .Version }}"
   prerelease: auto
   make_latest: true
-  mode: replace
+  mode: keep
 
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
