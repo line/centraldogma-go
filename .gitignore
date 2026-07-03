@@ -6,3 +6,5 @@ dist
 
 # Coverage output
 coverage.txt
+
+internal/app/dogma/build
