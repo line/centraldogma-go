@@ -29,10 +29,12 @@ const (
 )
 
 const (
-	projects = "projects"
-	repos    = "repos"
-	contents = "contents"
-	commits  = "commits"
+	projects      = "projects"
+	repos         = "repos"
+	contents      = "contents"
+	metadata      = "metadata"
+	appIdentities = "appIdentities"
+	commits       = "commits"
 
 	actionList    = "list"
 	actionCompare = "compare"

@@ -74,10 +74,11 @@ type Client struct {
 	baseURL *url.URL // Base URL for API requests.
 
 	// Services are used to communicate for the different parts of the Central Dogma server API.
-	project    *projectService
-	repository *repositoryService
-	content    *contentService
-	watch      *watchService
+	project     *projectService
+	repository  *repositoryService
+	content     *contentService
+	watch       *watchService
+	appIdentity *appIdentityService
 
 	// metrics
 	metricCollector *metrics.Metrics
@@ -182,6 +183,7 @@ func newClientWithHTTPClient(baseURL *url.URL, client *http.Client) (*Client, er
 	c.repository = (*repositoryService)(service)
 	c.content = (*contentService)(service)
 	c.watch = (*watchService)(service)
+	c.appIdentity = (*appIdentityService)(service)
 	return c, nil
 }
 
@@ -500,6 +502,67 @@ func (c *Client) GetDiffs(ctx context.Context,
 func (c *Client) Push(ctx context.Context, projectName, repoName, baseRevision string,
 	commitMessage *CommitMessage, changes []*Change) (result *PushResult, httpStatusCode int, err error) {
 	return c.content.push(ctx, projectName, repoName, baseRevision, commitMessage, changes)
+}
+
+// CreateAppIdentity creates an app identity.
+func (c *Client) CreateAppIdentity(
+	ctx context.Context, request *CreateAppIdentityRequest) (appIdentity *AppIdentity, httpStatusCode int, err error) {
+	return c.appIdentity.create(ctx, request)
+}
+
+// ListAppIdentities returns app identities.
+func (c *Client) ListAppIdentities(
+	ctx context.Context) (appIdentities []*AppIdentity, httpStatusCode int, err error) {
+	return c.appIdentity.list(ctx)
+}
+
+// RemoveAppIdentity removes an app identity.
+func (c *Client) RemoveAppIdentity(
+	ctx context.Context, appID string) (appIdentity *AppIdentity, httpStatusCode int, err error) {
+	return c.appIdentity.remove(ctx, appID)
+}
+
+// UpdateAppIdentityStatus updates app identity status to active or inactive.
+func (c *Client) UpdateAppIdentityStatus(
+	ctx context.Context, appID string, status AppIdentityStatus) (appIdentity *AppIdentity, httpStatusCode int, err error) {
+	return c.appIdentity.updateStatus(ctx, appID, status)
+}
+
+// UpdateAppIdentityLevel updates app identity level to USER or SYSTEMADMIN.
+func (c *Client) UpdateAppIdentityLevel(
+	ctx context.Context, appID string, level AppIdentityLevel) (appIdentity *AppIdentity, httpStatusCode int, err error) {
+	return c.appIdentity.updateLevel(ctx, appID, level)
+}
+
+// AddAppIdentityToProject adds an app identity to a project with the given role.
+func (c *Client) AddAppIdentityToProject(
+	ctx context.Context, projectName, appID string, role ProjectRole) (revision int, httpStatusCode int, err error) {
+	return c.appIdentity.addToProject(ctx, projectName, appID, role)
+}
+
+// UpdateAppIdentityProjectRole updates app identity role in a project.
+func (c *Client) UpdateAppIdentityProjectRole(
+	ctx context.Context, projectName, appID string, role ProjectRole) (revision int, httpStatusCode int, err error) {
+	return c.appIdentity.updateProjectRole(ctx, projectName, appID, role)
+}
+
+// RemoveAppIdentityFromProject removes an app identity from a project.
+func (c *Client) RemoveAppIdentityFromProject(
+	ctx context.Context, projectName, appID string) (revision int, httpStatusCode int, err error) {
+	return c.appIdentity.removeFromProject(ctx, projectName, appID)
+}
+
+// AddAppIdentityToRepository adds an app identity to a repository with the given role.
+func (c *Client) AddAppIdentityToRepository(
+	ctx context.Context, projectName, repoName, appID string, role RepositoryRole) (
+	revision int, httpStatusCode int, err error) {
+	return c.appIdentity.addToRepository(ctx, projectName, repoName, appID, role)
+}
+
+// RemoveAppIdentityFromRepository removes an app identity from a repository.
+func (c *Client) RemoveAppIdentityFromRepository(
+	ctx context.Context, projectName, repoName, appID string) (revision int, httpStatusCode int, err error) {
+	return c.appIdentity.removeFromRepository(ctx, projectName, repoName, appID)
 }
 
 func (c *Client) watchWithWatcher(w *Watcher) (result <-chan WatchResult, closer func()) {
