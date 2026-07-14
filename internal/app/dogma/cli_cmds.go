@@ -212,7 +212,7 @@ func CLICommands() []*cli.Command {
 				}
 				err = command.execute(c)
 				if err != nil {
-					return cli.NewExitError(err, 1)
+					return cli.Exit(err, 1)
 				}
 				return nil
 			},
